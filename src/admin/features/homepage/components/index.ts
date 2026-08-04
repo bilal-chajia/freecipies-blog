@@ -8,3 +8,4 @@ export { default as QuickFilterList } from './QuickFilterList';
 export { default as SocialProofStatList } from './SocialProofStatList';
 export { default as SocialProofTestimonialList } from './SocialProofTestimonialList';
 export { default as SocialProofLogoList } from './SocialProofLogoList';
+export { default as SocialFeedItemList } from './SocialFeedItemList';

@@ -9,6 +9,7 @@ import Collections from './Collections.astro';
 import SeasonalSpotlight from './SeasonalSpotlight.astro';
 import LatestRecipes from './LatestRecipes.astro';
 import SocialProof from './SocialProof.astro';
+import SocialFeed from './SocialFeed.astro';
 import AboutAuthor from './AboutAuthor.astro';
 import LeadMagnet from './LeadMagnet.astro';
 import NewsletterBanner from './NewsletterBanner.astro';
@@ -28,6 +29,7 @@ const hasCarousel = orderedSections.some((vm) => {
   if (vm.kind === 'collections') return vm.roundups.length > 1;
   return false;
 });
+const hasSocialFeed = orderedSections.some((vm) => vm.kind === 'social_feed');
 ---
 {
   orderedSections.map((vm) => {
@@ -50,6 +52,8 @@ const hasCarousel = orderedSections.some((vm) => {
         return <LatestRecipes section={vm.section} recipes={vm.recipes} />;
       case 'social_proof':
         return <SocialProof section={vm.section} />;
+      case 'social_feed':
+        return <SocialFeed section={vm.section} />;
       case 'about_author':
         return <AboutAuthor section={vm.section} author={vm.author} />;
       case 'lead_magnet':
@@ -65,5 +69,11 @@ const hasCarousel = orderedSections.some((vm) => {
 {hasCarousel && (
   <script>
     import '@site/scripts/home-carousels';
+  </script>
+)}
+
+{hasSocialFeed && (
+  <script>
+    import '@site/scripts/social-feed-embeds';
   </script>
 )}

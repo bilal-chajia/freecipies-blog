@@ -18,6 +18,8 @@ import type {
   HomepageCollectionsSection,
   HomepageSeasonalSpotlightSection,
   HomepageSocialProofSection,
+  HomepageSocialFeedSection,
+  HomepageSocialNetwork,
   HomepageLatestSection,
   HomepageAboutAuthorSection,
   HomepageLeadMagnetSection,
@@ -37,6 +39,7 @@ export type HomeSectionVM =
   | { kind: 'seasonal_spotlight'; section: HomepageSeasonalSpotlightSection }
   | { kind: 'latest'; section: HomepageLatestSection; recipes: HydratedArticle[] }
   | { kind: 'social_proof'; section: HomepageSocialProofSection }
+  | { kind: 'social_feed'; section: HomepageSocialFeedSection }
   | { kind: 'about_author'; section: HomepageAboutAuthorSection; author: Author | null }
   | { kind: 'lead_magnet'; section: HomepageLeadMagnetSection }
   | { kind: 'newsletter'; section: HomepageNewsletterSection }
@@ -80,7 +83,7 @@ function isCompleteHomepageImageSnapshot(
 
   return [image.variants?.sm, image.variants?.md, image.variants?.lg].every((variant) => (
     typeof variant?.r2_key === 'string'
-    && variant.r2_key.length > 0
+    && variant.r2_key.trim().length > 0
     && Number.isInteger(variant.width)
     && variant.width > 0
     && Number.isInteger(variant.height)
@@ -140,6 +143,53 @@ export function getRenderableSocialProof(
     stats,
     testimonials,
     logos,
+  };
+}
+
+function isSupportedHomepageSocialNetwork(network: string): network is HomepageSocialNetwork {
+  return network === 'instagram' || network === 'facebook' || network === 'pinterest';
+}
+
+function isSafeAbsoluteHttpsHref(href: string): boolean {
+  try {
+    const url = new URL(href);
+    return url.protocol === 'https:' && url.hostname.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+export function getRenderableSocialFeed(
+  section: HomepageSocialFeedSection,
+): HomepageSocialFeedSection | null {
+  const title = section.title.trim();
+  const items = section.items.flatMap((item) => {
+    const href = item.href.trim();
+    const image = item.image;
+
+    if (
+      !isSupportedHomepageSocialNetwork(item.network)
+      || !isSafeAbsoluteHttpsHref(href)
+      || !isCompleteHomepageImageSnapshot(image)
+    ) {
+      return [];
+    }
+
+    return [{
+      ...item,
+      caption: item.caption.trim(),
+      href,
+      image: { ...image, alt: image.alt.trim() },
+    }];
+  });
+
+  if (!title || items.length < 3 || items.length > 12) return null;
+
+  return {
+    ...section,
+    eyebrow: section.eyebrow.trim(),
+    title,
+    items,
   };
 }
 
@@ -277,6 +327,14 @@ export async function resolveHomeData(
         const renderable = getRenderableSocialProof(section);
         if (renderable) {
           vms.push({ kind: 'social_proof', section: renderable });
+        }
+        break;
+      }
+
+      case 'social_feed': {
+        const renderable = getRenderableSocialFeed(section);
+        if (renderable) {
+          vms.push({ kind: 'social_feed', section: renderable });
         }
         break;
       }

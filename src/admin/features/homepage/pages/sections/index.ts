@@ -9,5 +9,6 @@ export { default as FaqSection } from './FaqSection';
 export { default as QuickFiltersSection } from './QuickFiltersSection';
 export { default as SeasonalSpotlightSection } from './SeasonalSpotlightSection';
 export { default as SocialProofSection } from './SocialProofSection';
+export { default as SocialFeedSection } from './SocialFeedSection';
 export { default as LeadMagnetSection } from './LeadMagnetSection';
 export { default as SeoSection } from './SeoSection';

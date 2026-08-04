@@ -10,6 +10,7 @@ import { useParams } from 'react-router-dom';
 import { arrayMove } from '@dnd-kit/sortable';
 import api from '@admin/services/api-client';
 import type { AxiosRequestConfig } from 'axios';
+import { getHomepageSaveError } from '@admin/features/homepage/utils/homepage-save-error';
 import { HomepageLayout } from '@admin/features/homepage/components';
 import {
   HeroSection,
@@ -23,6 +24,7 @@ import {
   QuickFiltersSection,
   SeasonalSpotlightSection,
   SocialProofSection,
+  SocialFeedSection,
   LeadMagnetSection,
   SeoSection,
 } from './sections';
@@ -76,7 +78,7 @@ const cloneSettings = (settings: HomepageFormData): HomepageFormData => ({
             image: cloneHomepageImage(section.image),
             cta: { ...section.cta },
           }
-          : section.type === 'social_proof'
+            : section.type === 'social_proof'
             ? {
               ...section,
               stats: section.stats.map((stat) => ({ ...stat })),
@@ -86,13 +88,21 @@ const cloneSettings = (settings: HomepageFormData): HomepageFormData => ({
                 image: cloneHomepageImage(logo.image),
               })),
             }
-            : section.type === 'lead_magnet'
+            : section.type === 'social_feed'
               ? {
                 ...section,
-                image: cloneHomepageImage(section.image),
-                cta: { ...section.cta },
+                items: section.items.map((item) => ({
+                  ...item,
+                  image: cloneHomepageImage(item.image),
+                })),
               }
-              : { ...section }
+              : section.type === 'lead_magnet'
+                ? {
+                  ...section,
+                  image: cloneHomepageImage(section.image),
+                  cta: { ...section.cta },
+                }
+                : { ...section }
   )),
 });
 
@@ -157,6 +167,7 @@ const Homepage = () => {
       ['seasonal_spotlight', 'Seasonal Spotlight'],
       ['latest', 'Latest'],
       ['social_proof', 'Social Proof'],
+      ['social_feed', 'Social Feed'],
       ['about', 'Author'],
       ['lead_magnet', 'Lead Magnet'],
       ['newsletter', 'Newsletter'],
@@ -193,7 +204,8 @@ const Homepage = () => {
       toast.success('Homepage configuration saved');
     } catch (err) {
       console.error('Failed to save homepage settings:', err);
-      toast.error('Failed to save homepage configuration');
+      const saveError = getHomepageSaveError(err);
+      toast.error(saveError.message, { description: saveError.description });
     } finally {
       setSaving(false);
     }
@@ -216,6 +228,8 @@ const Homepage = () => {
         return <SeasonalSpotlightSection {...props} />;
       case 'social_proof':
         return <SocialProofSection {...props} />;
+      case 'social_feed':
+        return <SocialFeedSection {...props} />;
       case 'lead_magnet':
         return <LeadMagnetSection {...props} />;
       case 'featured':

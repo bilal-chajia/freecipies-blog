@@ -137,6 +137,14 @@ export function presentHomepageSettingsForAdmin(
               image: presentImage(logo.image),
             })),
           }
+          : section.type === 'social_feed'
+            ? {
+              ...section,
+              items: section.items.map((item) => ({
+                ...item,
+                image: presentImage(item.image),
+              })),
+            }
           : { ...section }
     )),
   };
@@ -160,6 +168,14 @@ export function normalizeHomepageSettingsFromAdmin(
                   image: normalizeImage(logo.image),
                 })),
               }
+              : section.type === 'social_feed'
+                ? {
+                  ...section,
+                  items: section.items.map((item) => ({
+                    ...item,
+                    image: normalizeImage(item.image),
+                  })),
+                }
               : { ...section }
         )),
       }

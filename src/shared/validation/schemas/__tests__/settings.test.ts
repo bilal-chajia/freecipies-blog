@@ -13,6 +13,27 @@ describe('HomepageSettingsSchema', () => {
     },
   };
 
+  const socialFeedItems = [
+    {
+      network: 'instagram',
+      caption: 'A fresh summer salad.',
+      href: 'https://www.instagram.com/p/summer-salad/',
+      image: resolvedImage,
+    },
+    {
+      network: 'facebook',
+      caption: 'Our latest weeknight dinner.',
+      href: 'https://www.facebook.com/example/posts/123',
+      image: resolvedImage,
+    },
+    {
+      network: 'pinterest',
+      caption: 'Save this recipe for later.',
+      href: 'https://www.pinterest.com/pin/123/',
+      image: resolvedImage,
+    },
+  ];
+
   it('accepts a valid sections array', () => {
     const result = HomepageSettingsSchema.safeParse({
       seo: { meta_title: 'Home' },
@@ -152,6 +173,131 @@ describe('HomepageSettingsSchema', () => {
     expect(invalidQuickFilter.success).toBe(false);
     expect(invalidSpotlight.success).toBe(false);
     expect(disabledUnsafeCta.success).toBe(false);
+  });
+
+  it('accepts enabled social feeds with Instagram, Facebook, and Pinterest items', () => {
+    const result = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social_feed',
+        type: 'social_feed',
+        enabled: true,
+        eyebrow: 'Follow along',
+        title: 'Recipes from our social feed',
+        items: socialFeedItems,
+      }],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('allows disabled social feed drafts with zero to twelve items', () => {
+    const emptyDraft = HomepageSettingsSchema.safeParse({
+      sections: [{ id: 'social_feed', type: 'social_feed', enabled: false, eyebrow: '', title: '', items: [] }],
+    });
+    const fullDraft = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social_feed',
+        type: 'social_feed',
+        enabled: false,
+        eyebrow: '',
+        title: '',
+        items: Array.from({ length: 12 }, () => socialFeedItems[0]),
+      }],
+    });
+
+    expect(emptyDraft.success).toBe(true);
+    expect(fullDraft.success).toBe(true);
+  });
+
+  it('rejects malformed retained cards in disabled social feeds', () => {
+    const disabledSection = (item: unknown) => HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social_feed',
+        type: 'social_feed',
+        enabled: false,
+        eyebrow: '',
+        title: '',
+        items: [item],
+      }],
+    });
+
+    const unknownNetwork = disabledSection({ ...socialFeedItems[0], network: 'youtube' });
+    const internalHref = disabledSection({ ...socialFeedItems[0], href: '/recipes/salad' });
+    const missingImage = disabledSection({ ...socialFeedItems[0], image: null });
+    const missingAlt = disabledSection({ ...socialFeedItems[0], image: { ...resolvedImage, alt: '   ' } });
+    const untrustedImage = disabledSection({
+      ...socialFeedItems[0],
+      image: { ...resolvedImage, variants: { ...resolvedImage.variants, md: { ...resolvedImage.variants.md, r2_key: 'media/salad-md.webp' } } },
+    });
+
+    expect(unknownNetwork.success).toBe(false);
+    expect(internalHref.success).toBe(false);
+    expect(missingImage.success).toBe(false);
+    expect(missingAlt.success).toBe(false);
+    expect(untrustedImage.success).toBe(false);
+  });
+
+  it('rejects incomplete enabled social feeds and unsafe social feed items', () => {
+    const tooFewItems = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social_feed', type: 'social_feed', enabled: true, eyebrow: '', title: 'Follow us',
+        items: socialFeedItems.slice(0, 2),
+      }],
+    });
+    const tooManyItems = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social_feed', type: 'social_feed', enabled: true, eyebrow: '', title: 'Follow us',
+        items: Array.from({ length: 13 }, () => socialFeedItems[0]),
+      }],
+    });
+    const missingTitle = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social_feed', type: 'social_feed', enabled: true, eyebrow: '', title: '   ', items: socialFeedItems,
+      }],
+    });
+    const unknownNetwork = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social_feed', type: 'social_feed', enabled: true, eyebrow: '', title: 'Follow us',
+        items: [{ ...socialFeedItems[0], network: 'youtube' }],
+      }],
+    });
+    const invalidHrefs = ['/recipes/salad', '//example.com/post', 'javascript:alert(1)', 'http://example.com/post'];
+    const invalidHrefResults = invalidHrefs.map((href) => HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social_feed', type: 'social_feed', enabled: true, eyebrow: '', title: 'Follow us',
+        items: socialFeedItems.map((item) => ({ ...item, href })),
+      }],
+    }));
+    const missingImage = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social_feed', type: 'social_feed', enabled: true, eyebrow: '', title: 'Follow us',
+        items: socialFeedItems.map((item) => ({ ...item, image: null })),
+      }],
+    });
+    const missingAlt = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social_feed', type: 'social_feed', enabled: true, eyebrow: '', title: 'Follow us',
+        items: socialFeedItems.map((item) => ({ ...item, image: { ...resolvedImage, alt: '   ' } })),
+      }],
+    });
+    const r2Key = HomepageSettingsSchema.safeParse({
+      sections: [{
+        id: 'social_feed', type: 'social_feed', enabled: true, eyebrow: '', title: 'Follow us',
+        items: socialFeedItems.map((item) => ({
+          ...item,
+          image: { ...resolvedImage, variants: { ...resolvedImage.variants, md: { ...resolvedImage.variants.md, r2_key: 'media/salad-md.webp' } } },
+        })),
+      }],
+    });
+
+    expect(tooFewItems.success).toBe(false);
+    expect(tooManyItems.success).toBe(false);
+    expect(missingTitle.success).toBe(false);
+    expect(unknownNetwork.success).toBe(false);
+    expect(invalidHrefResults.every((result) => !result.success)).toBe(true);
+    expect(missingImage.success).toBe(false);
+    expect(missingAlt.success).toBe(false);
+    expect(r2Key.success).toBe(false);
   });
 
   it('accepts disabled P3C drafts and complete enabled P3C sections', () => {

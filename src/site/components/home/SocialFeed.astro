@@ -1,0 +1,203 @@
+---
+import { resolveVariantUrl } from '@shared/types/images';
+import type {
+  HomepageSocialFeedSection,
+  HomepageSocialNetwork,
+} from '@modules/settings/types/settings.types';
+
+interface Props {
+  section: HomepageSocialFeedSection;
+}
+
+const { section } = Astro.props as Props;
+const SOCIAL_NETWORK_NAMES: Record<HomepageSocialNetwork, string> = {
+  instagram: 'Instagram',
+  facebook: 'Facebook',
+  pinterest: 'Pinterest',
+};
+---
+
+<section class="social-feed" data-social-feed data-fade-up aria-labelledby={`social-feed-${section.id}`}>
+  <div class="social-feed__inner">
+    <header class="social-feed__header">
+      {section.eyebrow && <p class="social-feed__eyebrow">{section.eyebrow}</p>}
+      <h2 id={`social-feed-${section.id}`}>{section.title}</h2>
+    </header>
+
+    <ul class="social-feed__grid">
+      {section.items.map((item) => {
+        const image = item.image!;
+        const smUrl = resolveVariantUrl(image.variants.sm);
+        const mdUrl = resolveVariantUrl(image.variants.md);
+        const lgUrl = resolveVariantUrl(image.variants.lg);
+        const src = mdUrl ?? lgUrl ?? smUrl;
+        const networkName = SOCIAL_NETWORK_NAMES[item.network];
+        const srcSet = [
+          smUrl ? `${smUrl} ${image.variants.sm.width}w` : '',
+          mdUrl ? `${mdUrl} ${image.variants.md.width}w` : '',
+          lgUrl ? `${lgUrl} ${image.variants.lg.width}w` : '',
+        ].filter(Boolean).join(', ');
+
+        return src && (
+          <li data-social-feed-card data-social-network={item.network} data-social-post-href={item.href}>
+            <a data-social-feed-fallback href={item.href} target="_blank" rel="noopener noreferrer">
+              <img
+                src={src}
+                alt={image.alt}
+                width={image.variants.md.width}
+                height={image.variants.md.height}
+                srcset={srcSet || undefined}
+                sizes={srcSet ? '(max-width: 900px) 50vw, 33vw' : undefined}
+                loading="lazy"
+              />
+              <span class="social-feed__network" aria-label={`Social network: ${networkName}`}>
+                {networkName}
+              </span>
+              {item.caption && <span class="social-feed__caption">{item.caption}</span>}
+            </a>
+            <div
+              data-social-feed-mount
+              style={`--social-feed-mount-ratio: ${image.variants.md.width} / ${image.variants.md.height};`}
+              hidden
+              aria-live="polite"
+            ></div>
+          </li>
+        );
+      })}
+    </ul>
+
+    <div class="social-feed__consent">
+      <button type="button" data-social-feed-consent>Load social posts</button>
+      <p>External social services load after you choose to view their posts.</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .social-feed {
+    padding: clamp(var(--space-10), 7vw, var(--space-16)) var(--space-5);
+    background: var(--bg-muted);
+  }
+
+  .social-feed__inner {
+    max-width: var(--container-max);
+    margin: 0 auto;
+  }
+
+  .social-feed__header {
+    max-width: 42rem;
+  }
+
+  .social-feed__eyebrow {
+    margin: 0 0 var(--space-2);
+    color: var(--text-brand);
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+    line-height: var(--leading-normal);
+    text-transform: uppercase;
+  }
+
+  .social-feed h2 {
+    margin: 0;
+    color: var(--text);
+    font-family: var(--font-heading);
+    font-size: clamp(var(--text-2xl), 1.25rem + 1.8vw, var(--text-4xl));
+    line-height: var(--leading-tight);
+    letter-spacing: 0;
+  }
+
+  .social-feed__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-5);
+    margin: var(--space-8) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .social-feed__grid li {
+    min-width: 0;
+  }
+
+  .social-feed__grid [data-social-feed-mount] {
+    display: block;
+    width: 100%;
+    aspect-ratio: var(--social-feed-mount-ratio);
+  }
+
+  .social-feed__grid [data-social-feed-mount][hidden] {
+    display: none;
+  }
+
+  .social-feed__grid a {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .social-feed__grid img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: attr(width) / attr(height);
+    object-fit: cover;
+  }
+
+  .social-feed__network {
+    display: inline-block;
+    margin-top: var(--space-2);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: var(--font-bold);
+    line-height: var(--leading-normal);
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .social-feed__caption {
+    display: block;
+    margin-top: var(--space-1);
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+  }
+
+  .social-feed__consent {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+  }
+
+  .social-feed__consent button {
+    min-height: 2.5rem;
+    padding: 0 var(--space-4);
+    border: 1px solid var(--text);
+    border-radius: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-weight: var(--font-bold);
+    cursor: pointer;
+  }
+
+  .social-feed__consent p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+  }
+
+  @media (max-width: 900px) {
+    .social-feed__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    .social-feed {
+      padding-inline: var(--space-4);
+    }
+  }
+</style>

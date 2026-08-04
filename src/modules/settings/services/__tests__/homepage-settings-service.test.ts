@@ -69,11 +69,12 @@ describe('getHomepageSettings', () => {
       'quick_filters',
       'seasonal_spotlight',
       'social_proof',
+      'social_feed',
       'lead_magnet',
       'faq',
     ]);
     expect(result.sections[0].enabled).toBe(false);
-    expect(result.sections[5]).toMatchObject({ type: 'faq', enabled: false, items: [] });
+    expect(result.sections[6]).toMatchObject({ type: 'faq', enabled: false, items: [] });
     expect(result.seo.meta_title).toBe(HOMEPAGE_SETTINGS_DEFAULTS.seo.meta_title);
   });
 
@@ -90,6 +91,7 @@ describe('getHomepageSettings', () => {
       'quick_filters',
       'seasonal_spotlight',
       'social_proof',
+      'social_feed',
       'lead_magnet',
       'faq',
     ]);
@@ -136,14 +138,14 @@ describe('getHomepageSettings', () => {
     expect(result.sections.at(-1)?.type).toBe('faq');
   });
 
-  it('inserts disabled P3C defaults at their catalog anchors without changing legacy order', async () => {
+  it('inserts disabled P3C and P3D defaults at their catalog anchors without changing legacy order', async () => {
     const cache = cacheReturning(JSON.stringify({ sections: legacySections() })) as unknown as SettingsCacheStore;
 
     const result = await getHomepageSettings(NO_DB, { cache });
 
     expect(result.sections.map((section) => section.id)).toEqual([
       'stories', 'hero', 'quick_filters', 'featured', 'categories', 'collections',
-      'seasonal_spotlight', 'latest', 'social_proof', 'about', 'lead_magnet',
+      'seasonal_spotlight', 'latest', 'social_proof', 'social_feed', 'about', 'lead_magnet',
       'newsletter', 'faq',
     ]);
     expect(result.sections.find((section) => section.type === 'social_proof')).toMatchObject({
@@ -162,6 +164,12 @@ describe('getHomepageSettings', () => {
       image: null,
       cta: { label: '', href: '' },
     });
+    expect(result.sections.find((section) => section.type === 'social_feed')).toMatchObject({
+      enabled: false,
+      eyebrow: '',
+      title: '',
+      items: [],
+    });
     expect(result.sections.at(-1)?.type).toBe('faq');
   });
 
@@ -179,15 +187,16 @@ describe('getHomepageSettings', () => {
     const result = await getHomepageSettings(NO_DB, { cache });
 
     expect(result.sections.map((section) => section.id)).toEqual([
-      'hero', 'latest', 'social_proof', 'about', 'lead_magnet', 'newsletter',
+      'hero', 'latest', 'social_proof', 'social_feed', 'about', 'lead_magnet', 'newsletter',
       'quick_filters', 'seasonal_spotlight', 'faq',
     ]);
     expect(result.sections.filter((section) => section.type === 'social_proof')).toHaveLength(1);
+    expect(result.sections.filter((section) => section.type === 'social_feed')).toHaveLength(1);
     expect(result.sections.filter((section) => section.type === 'lead_magnet')).toHaveLength(1);
     expect(result.sections.at(-1)?.type).toBe('faq');
   });
 
-  it('inserts social proof before about author when a partial setting omits latest', async () => {
+  it('inserts social feed before about author after adding a missing social proof', async () => {
     const sections = [
       { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: true, refs: [] },
       { id: 'about', type: 'about_author', enabled: true, author_id: null },
@@ -199,8 +208,24 @@ describe('getHomepageSettings', () => {
     const result = await getHomepageSettings(NO_DB, { cache });
 
     expect(result.sections.map((section) => section.id)).toEqual([
-      'hero', 'social_proof', 'about', 'lead_magnet', 'newsletter',
+      'hero', 'social_proof', 'social_feed', 'about', 'lead_magnet', 'newsletter',
       'quick_filters', 'seasonal_spotlight', 'faq',
+    ]);
+  });
+
+  it('inserts social feed before newsletter when social proof and about author are absent', async () => {
+    const sections = [
+      { id: 'hero', type: 'hero', enabled: true, mode: 'slider', show_search: true, refs: [] },
+      { id: 'newsletter', type: 'newsletter', enabled: true, title: 'Weekly recipes', subtitle: '', button_text: 'Subscribe', placeholder_text: 'Email' },
+      { id: 'faq', type: 'faq', enabled: false, title: 'FAQ', items: [] },
+    ];
+    const cache = cacheReturning(JSON.stringify({ sections })) as unknown as SettingsCacheStore;
+
+    const result = await getHomepageSettings(NO_DB, { cache });
+
+    expect(result.sections.map((section) => section.id)).toEqual([
+      'hero', 'social_feed', 'lead_magnet', 'newsletter',
+      'quick_filters', 'seasonal_spotlight', 'social_proof', 'faq',
     ]);
   });
 
@@ -216,7 +241,7 @@ describe('getHomepageSettings', () => {
     const result = await getHomepageSettings(NO_DB, { cache });
 
     expect(result.sections.map((section) => section.id)).toEqual([
-      'hero', 'latest', 'social_proof', 'lead_magnet', 'newsletter',
+      'hero', 'latest', 'social_proof', 'social_feed', 'lead_magnet', 'newsletter',
       'quick_filters', 'seasonal_spotlight', 'faq',
     ]);
   });
@@ -230,7 +255,7 @@ describe('getHomepageSettings', () => {
     const stored = JSON.parse(persisted.value ?? '{}') as { sections: Array<{ id: string }> };
     const expected = [
       'stories', 'hero', 'quick_filters', 'featured', 'categories', 'collections',
-      'seasonal_spotlight', 'latest', 'social_proof', 'about', 'lead_magnet',
+      'seasonal_spotlight', 'latest', 'social_proof', 'social_feed', 'about', 'lead_magnet',
       'newsletter', 'faq',
     ];
 
@@ -253,7 +278,7 @@ describe('getHomepageSettings', () => {
     );
     const stored = JSON.parse(persisted.value ?? '{}') as { sections: Array<{ id: string }> };
     const expected = [
-      'hero', 'social_proof', 'about', 'lead_magnet', 'newsletter',
+      'hero', 'social_proof', 'social_feed', 'about', 'lead_magnet', 'newsletter',
       'quick_filters', 'seasonal_spotlight', 'faq',
     ];
 
