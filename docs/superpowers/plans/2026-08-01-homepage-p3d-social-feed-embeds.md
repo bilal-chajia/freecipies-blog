@@ -1,5 +1,12 @@
 # Homepage P3D Social Feed Embeds Implementation Plan
 
+## Current Status (2026-08-03)
+
+- [x] P3D implementation is complete and merged into local `main`: settings, media boundary, admin editor, SSR fallback, and consented embeds.
+- [x] Nine-file focused suite passes (91 tests); typecheck, boundaries, and diff checks pass.
+- [ ] Live browser verification of consent, provider loading, fallback preservation, and admin save/reload remains pending.
+- [ ] Full suite retains the documented pre-existing `debug.test.ts` failure because this checkout has no `.wrangler` D1 state.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a configurable Instagram, Facebook, and Pinterest social feed whose own media cards render immediately and whose official embeds load only after session-local consent.

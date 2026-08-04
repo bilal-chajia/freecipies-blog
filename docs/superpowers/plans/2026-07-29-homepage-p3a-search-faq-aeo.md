@@ -1,5 +1,11 @@
 # Homepage P3A Search, FAQ, and AEO Implementation Plan
 
+## Current Status (2026-08-03)
+
+- [x] P3A implementation is complete: navbar recipe search, FAQ editor/rendering, fixed-last FAQ ordering, and homepage AEO JSON-LD.
+- [x] Focused verification and review are complete.
+- [ ] Browser verification of live search, FAQ rendering, and responsive behavior remains pending.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make navbar recipe search functional, add a structured fixed-last homepage FAQ matching article FAQs, and emit accurate homepage `ItemList` and conditional `FAQPage` JSON-LD.

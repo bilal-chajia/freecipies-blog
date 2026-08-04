@@ -1,5 +1,11 @@
 # Homepage Config — Phase 1b (Redesign + Motion) Implementation Plan
 
+## Current Status (2026-08-03)
+
+- [x] Redesign implementation is complete: deferred carousel enhancement, hero/rail redesign, section motion, and reduced-motion handling.
+- [x] Static verification is complete.
+- [ ] Browser interaction, reduced-motion, and Lighthouse verification remain pending.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Redesign the settings-driven public homepage sections built in P1a into a cohesive editorial food-blog experience with accessible motion and progressive carousel enhancement, without touching admin config or adding P3-only section types.

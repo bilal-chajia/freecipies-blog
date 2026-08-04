@@ -1,5 +1,12 @@
 # Homepage Config — Phase 0 (Foundation) Implementation Plan
 
+## Current Status (2026-08-03)
+
+- [x] Foundation implementation is complete: settings contract, section types/defaults, service normalization/update, schema, and homepage API.
+- [x] Focused tests, typecheck, and boundary checks are complete.
+- [ ] Full-suite baseline is not fully green: `debug.test.ts` requires the missing `.wrangler` D1 state.
+- [ ] Manual API/browser verification remains part of the global homepage verification pass.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a persisted, validated configuration rail for the homepage (`site_settings.homepage_settings` extended from `{ seo }` to `{ seo, sections[] }`), with no public/admin UI change yet.

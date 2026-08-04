@@ -1,5 +1,11 @@
 # Homepage Config — Phase 1a (Render Rail) Implementation Plan
 
+## Current Status (2026-08-03)
+
+- [x] Render rail implementation is complete: homepage resolver, JSON-LD foundation, section components, dispatcher, visible H1, and settings-driven rendering.
+- [x] Static and focused verification is complete.
+- [ ] Browser render verification and Lighthouse re-check remain pending.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make the public homepage render from `homepage_settings.sections` (Phase 0) instead of hardcoded slices — by splitting `index.astro` into focused `home/*` components driven by a typed dispatcher, adding a semantic `<h1>` and homepage JSON-LD (WebSite/SearchAction/Organization), while reusing the current visual styles (no redesign yet — that is Phase 1b).

@@ -1,5 +1,11 @@
 # Homepage P2 + Site Fixes Implementation Plan
 
+## Current Status (2026-08-03)
+
+- [x] P2 implementation is complete: API-backed homepage save/reload, section ordering, drag-and-drop navigation, and content pickers.
+- [x] Site-side fixes and focused verification are complete.
+- [ ] Manual admin save/reload and responsive browser verification remain pending in the global pass.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Close four homepage gaps — N+1 query on manual refs, hero/latest duplication, hidden `<h1>`, and incomplete admin P2 (drag-reorder + real pickers) — without touching contracts or the `homepage_settings` storage shape.
