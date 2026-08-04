@@ -4,6 +4,15 @@ import { defineConfig } from 'vitest/config';
 const resolvePath = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
 export default defineConfig({
+  test: {
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/cypress/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/.worktrees/**',
+    ],
+  },
   resolve: {
     alias: {
       '@': resolvePath('./src/admin'),

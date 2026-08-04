@@ -221,7 +221,8 @@ describe('social feed embed support', () => {
 
 describe('social feed SSR boundary', () => {
   it('keeps provider URLs and session storage out of the fallback component', async () => {
-    const source = await readFile(new URL('../../components/home/SocialFeed.astro', import.meta.url), 'utf8');
+    const source = (await readFile(new URL('../../components/home/SocialFeed.astro', import.meta.url), 'utf8'))
+      .replaceAll('\r\n', '\n');
 
     expect(source).not.toContain('https://www.instagram.com/embed.js');
     expect(source).not.toContain('https://connect.facebook.net/en_US/sdk.js');
@@ -250,7 +251,8 @@ describe('social feed SSR boundary', () => {
   });
 
   it('forces hidden provider mounts to remain out of layout', async () => {
-    const source = await readFile(new URL('../../components/home/SocialFeed.astro', import.meta.url), 'utf8');
+    const source = (await readFile(new URL('../../components/home/SocialFeed.astro', import.meta.url), 'utf8'))
+      .replaceAll('\r\n', '\n');
 
     expect(source).toContain(`.social-feed__grid [data-social-feed-mount][hidden] {
     display: none;
