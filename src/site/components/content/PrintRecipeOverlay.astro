@@ -6,8 +6,7 @@
  * "Print" button inside prints only the overlay content, "Close" dismisses.
  */
 
-import type { Article } from "@modules/articles/schema/articles.schema";
-import type { Author } from "@modules/authors/schema/authors.schema";
+import type { SiteArticleRenderModel, SiteAuthorRenderModel } from "@site/utils/content-render";
 import type {
     RecipeJson,
     IngredientGroup,
@@ -15,9 +14,9 @@ import type {
 } from "@modules/articles/types/recipes.types";
 
 interface Props {
-    article: Article;
+    article: SiteArticleRenderModel;
     recipe: RecipeJson;
-    author?: Author | null;
+    author?: SiteAuthorRenderModel | null;
     heroImageUrl?: string;
     heroImageAlt?: string;
 }

@@ -37,7 +37,7 @@ props; preview-only string ids skip the numeric ratings island safely.
 | --- | --- |
 | `pnpm check:astro` | Blocked before diagnostics; see concern below. |
 | `pnpm typecheck` | Passed. |
-| `pnpm test` | Passed: 89 files, 548 tests. |
+| `pnpm test` | Passed: 89 files, 549 tests. |
 | `pnpm check:boundaries` | Passed. |
 | `git diff --check` | Passed. |
 
@@ -90,3 +90,26 @@ Miniflare then throws `ERR_RUNTIME_FAILURE` at
 `miniflare/dist/src/index.js:87889` before Astro reaches “Getting diagnostics
 for Astro files”. Because bypassing sync would weaken the required exact gate,
 no workaround was adopted. The environment blocker remains explicit.
+
+## Fix round 2 — Astro diagnostics
+
+The controller’s exact `pnpm check:astro` run reached Astro diagnostics and
+reported 17 remaining template errors. This round removes those reported
+boundary mismatches: FAQ payloads are normalized to the FAQ component contract,
+heading and alert blocks use their discriminated content-block types, recipe
+overlays accept the render model directly, nullable image props become optional
+child props, and roundup data is parsed as `RoundupJson`.
+
+The local exact command was also re-run after these fixes, but its Miniflare
+startup produced no diagnostics and remained running until stopped after about
+50 seconds. The controller’s diagnostic result is therefore the actionable
+Astro baseline for this round; local typecheck, full tests (89 files, 549
+tests), boundary checks, and diff checks passed.
+
+### Diagnostic result
+
+After the fixes, `pnpm exec astro check --minimumSeverity error --noSync`
+completed successfully with **0 errors** across 847 files. The required exact
+`pnpm check:astro` command was re-run and again timed out after roughly one
+minute without reaching diagnostics, so the sync/Miniflare startup issue
+remains isolated to the exact local gate. No temporary probe files were kept.

@@ -10,6 +10,7 @@ import HeroImage from "../components/content/HeroImage.astro";
 import TableOfContents from "../components/content/TableOfContents.astro";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import { safeParseJson } from "@shared/utils/hydration";
+import type { RoundupJson } from "@modules/articles/types/roundups.types";
 import { getReadingTimeDisplay } from "@modules/articles/utils/cached-fields";
 import { normalizeArticleForRender } from "@site/utils/content-render";
 import {
@@ -25,7 +26,7 @@ interface Props {
 const { article: rawArticle, author, category } = Astro.props;
 const article = normalizeArticleForRender(rawArticle, { author, category });
 
-const parsedRoundupJson = safeParseJson<Record<string, unknown>>(article.roundup_json) || { items: [] };
+const parsedRoundupJson = safeParseJson<RoundupJson>(article.roundup_json);
 const categoryColor = article.category?.color || "#ff6600";
 
 const tocSettings = await getSiteTocSettings();
@@ -133,7 +134,7 @@ const contentBlocks = normalizeContentDocument(article.content_json).blocks;
         <TableOfContents toc={article.cached_toc_json} settings={tocSettings} />
 
         <HeroImage
-          src={heroSlot.image_url || heroThumb.image_url || article.image_url}
+          src={heroSlot.image_url || heroThumb.image_url || article.image_url || undefined}
           alt={heroSlot.imageAlt || heroThumb.imageAlt || article.headline}
           width={heroSlot.imageWidth || heroThumb.imageWidth}
           height={heroSlot.imageHeight || heroThumb.imageHeight}
@@ -151,7 +152,7 @@ const contentBlocks = normalizeContentDocument(article.content_json).blocks;
         }
 
         {
-          (contentBlocks.length > 0 || parsedRoundupJson?.items?.length > 0) && (
+          (contentBlocks.length > 0 || (parsedRoundupJson?.items.length ?? 0) > 0) && (
             <section class="content-section content-json-section">
               <ContentRenderer
                 article={article}

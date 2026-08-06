@@ -72,7 +72,7 @@ let h2 = 0,
   h4 = 0;
 const processedBlocks = parsed.map((block: NormalizedContentBlock) => {
   if (block?.type === "heading") {
-    const level = (block as Record<string, unknown>).level || 2;
+    const level = block.level;
     let num = "";
     if (numberingEnabled) {
       if (level === 2) {

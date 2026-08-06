@@ -47,15 +47,14 @@ const alertVariants = {
   };
 };
 
-import type { ContentBlock } from '@modules/content-blocks/contract/content-blocks.types';
+import type { TipBoxBlock } from '@modules/content-blocks/contract/content-blocks.types';
 
-const { block } = Astro.props as { block: ContentBlock };
-const type = (block as Record<string, unknown>).props?.type || (block as Record<string, unknown>).variant || (block.type === 'tip_box' ? 'tip' : 'warning');
-const blockRecord = block as Record<string, unknown>;
+const { block } = Astro.props as { block: TipBoxBlock };
+const type = block.variant;
 const v = alertVariants[type] || alertVariants.info;
-let alertTitle = (blockRecord.title as string | undefined) || v.defaultTitle;
+let alertTitle = block.title || v.defaultTitle;
 if (alertTitle.includes('|')) alertTitle = alertTitle.split('|')[0].trim();
-const rawText = (blockRecord.text as string | undefined) || (blockRecord.content as string | undefined) || '';
+const rawText = block.text;
 const alertContent = renderMarkdownText(rawText);
 ---
 <div class="tip-box-premium" role={type === 'warning' ? 'alert' : 'note'} style={`--tip-accent: ${v.accent};`}>

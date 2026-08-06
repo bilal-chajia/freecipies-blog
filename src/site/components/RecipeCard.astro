@@ -529,10 +529,10 @@ const navItems = [
       {/* Print Preview Overlay */}
       <PrintRecipeOverlay
         article={article}
-        recipe={recipe as RecipeJson}
+        recipe={recipe}
         author={author}
-        heroImageUrl={heroImage.image_url}
-        heroImageAlt={heroImage.imageAlt}
+        heroImageUrl={heroImage.image_url ?? undefined}
+        heroImageAlt={heroImage.imageAlt ?? undefined}
       />
     </div>
   )

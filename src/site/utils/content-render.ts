@@ -17,6 +17,19 @@ export interface SiteCategoryRenderModel {
   color: string | null;
 }
 
+export interface SiteFaqItem {
+  q?: string;
+  a?: string;
+  question?: string;
+  answer?: string;
+}
+
+export type SiteFaqsRenderModel =
+  | string
+  | SiteFaqItem[]
+  | { heading?: string; intro?: string | null; items?: SiteFaqItem[] }
+  | null;
+
 /**
  * Render-only article model shared by public layouts and content blocks.
  * It accepts both hydrated article rows and the deliberately sparse preview
@@ -33,7 +46,7 @@ export interface SiteArticleRenderModel {
   content_json: unknown;
   recipe_json: unknown;
   roundup_json: RoundupJson | string | null;
-  faqs_json: unknown;
+  faqs_json: SiteFaqsRenderModel;
   images_json: string | null;
   cached_toc_json: string | null;
   metaTitle: string | null;
@@ -100,6 +113,39 @@ export function normalizeCategoryForRender(value: unknown): SiteCategoryRenderMo
   };
 }
 
+function normalizeFaqItem(value: unknown): SiteFaqItem | null {
+  if (!isRecord(value)) return null;
+  const item: SiteFaqItem = {};
+  const keys = ['q', 'a', 'question', 'answer'] as const;
+  for (const key of keys) {
+    const text = stringOrNull(value[key]);
+    if (text !== null) item[key] = text;
+  }
+  return Object.keys(item).length > 0 ? item : null;
+}
+
+function normalizeFaqItems(value: unknown): SiteFaqItem[] | null {
+  if (!Array.isArray(value)) return null;
+  return value
+    .map(normalizeFaqItem)
+    .filter((item): item is SiteFaqItem => item !== null);
+}
+
+export function normalizeFaqsForRender(value: unknown): SiteFaqsRenderModel {
+  if (typeof value === 'string') return value;
+  const items = normalizeFaqItems(value);
+  if (items) return items;
+  if (!isRecord(value)) return null;
+
+  const objectItems = normalizeFaqItems(value.items);
+  if (!objectItems) return null;
+  return {
+    heading: stringOrNull(value.heading) ?? undefined,
+    intro: stringOrNull(value.intro),
+    items: objectItems,
+  };
+}
+
 export function normalizeArticleForRender(
   value: unknown,
   related: { author?: unknown; category?: unknown } = {},
@@ -123,7 +169,7 @@ export function normalizeArticleForRender(
     roundup_json: typeof article.roundup_json === 'string' || isRecord(article.roundup_json)
       ? article.roundup_json as RoundupJson | string
       : null,
-    faqs_json: article.faqs_json ?? null,
+    faqs_json: normalizeFaqsForRender(article.faqs_json),
     images_json: normalizeJsonText(article.images_json),
     cached_toc_json: normalizeJsonText(article.cached_toc_json),
     metaTitle: stringOrNull(article.metaTitle),

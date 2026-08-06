@@ -42,7 +42,7 @@ const recipe_json = normalizeRecipeForRender(recipe.recipe_json);
 
 const readingTime = getReadingTimeDisplay(recipe);
 
-const { image: heroImage, srcSet: heroSrcSet } = resolveHeroImage(recipe.images_json as string, 1200);
+const { image: heroImage, srcSet: heroSrcSet } = resolveHeroImage(recipe.images_json, 1200);
 const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";
 
 let authorAvatar: {
@@ -82,8 +82,8 @@ const truncate = (str: string, max: number) =>
 
 const breadcrumbItems = [
   { label: "Recipes", href: "/recipes" },
-  ...(category
-    ? [{ label: category.label, href: `/categories/${category.slug}` }]
+  ...(recipe.category
+    ? [{ label: recipe.category.label, href: `/categories/${recipe.category.slug}` }]
     : []),
   { label: truncate(String(recipe.headline ?? ""), 50) },
 ];
@@ -189,10 +189,10 @@ const breadcrumbItems = [
 
         <!-- Hero Image -->
         <HeroImage
-          src={heroImage.image_url || recipe.image_url}
+          src={heroImage.image_url || recipe.image_url || undefined}
           alt={heroImage.imageAlt || recipe.imageAlt || recipe.headline}
-          width={heroImage.imageWidth || recipe.imageWidth}
-          height={heroImage.imageHeight || recipe.imageHeight}
+          width={heroImage.imageWidth || recipe.imageWidth || undefined}
+          height={heroImage.imageHeight || recipe.imageHeight || undefined}
           srcset={heroSrcSet}
           sizes={heroSizes}
           style={heroImage.imageStyle}
