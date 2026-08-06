@@ -10,6 +10,7 @@
     "deploy": "wrangler deploy",
     "deploy:local": "deploy.bat",
     "astro": "astro",
+    "check:astro": "astro check --minimumSeverity error",
     "typecheck": "tsc --noEmit --pretty false --ignoreDeprecations 6.0",
     "migrate": "node scripts/migrate-csv-to-d1.js",
     "test": "vitest run",

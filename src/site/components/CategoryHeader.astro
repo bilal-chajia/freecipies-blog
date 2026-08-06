@@ -72,7 +72,7 @@ const featuredAuthorAvatar = featuredArticle?.author?.avatar_url || null;
                   alt={
                     featuredImage.selected.imageAlt ||
                     featuredArticle.imageAlt ||
-                    featuredArticle.label
+                    featuredArticle.headline
                   }
                   width={
                     featuredImage.selected.imageWidth ||
@@ -95,7 +95,7 @@ const featuredAuthorAvatar = featuredArticle?.author?.avatar_url || null;
             </div>
             <div class="featured-body">
               <span class="featured-eyebrow">Featured Recipe</span>
-              <h2 class="featured-title">{featuredArticle.label}</h2>
+              <h2 class="featured-title">{featuredArticle.headline}</h2>
               {featuredArticle.short_description && (
                 <p class="featured-description">
                   {featuredArticle.short_description}

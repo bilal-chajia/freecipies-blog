@@ -1,11 +1,12 @@
 ---
 import RecipeCard from '../../RecipeCard.astro';
+import type { SiteArticleRenderModel, SiteAuthorRenderModel, SiteCategoryRenderModel } from '@site/utils/content-render';
 const { block, article, recipe_json, author, category } = Astro.props as {
   block: { type: 'main_recipe' };
-  article: Record<string, unknown>;
-  recipe_json: Record<string, unknown>;
-  author: Record<string, unknown> | null;
-  category: Record<string, unknown> | null;
+  article: SiteArticleRenderModel;
+  recipe_json: unknown;
+  author: SiteAuthorRenderModel | null;
+  category: SiteCategoryRenderModel | null;
 };
 if (!article || !recipe_json) return null;
 ---

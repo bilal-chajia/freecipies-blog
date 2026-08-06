@@ -19,10 +19,33 @@ import TableBlock from "./content/blocks/Table.astro";
 import Video from "./content/blocks/Video.astro";
 
 import type { NormalizedContentBlock } from "@modules/content-blocks/contract/content-blocks.types";
+import type { RoundupJson } from "@modules/articles/types/roundups.types";
+import type { SiteArticleRenderModel } from "@site/utils/content-render";
+import type {
+  ResolvedAuthorCreditSnapshot,
+  ResolvedImageVariant,
+  StoredAuthorCreditSnapshot,
+  StoredImageVariant,
+} from '@shared/types/images';
+
+type RenderableImageVariant = ResolvedImageVariant | StoredImageVariant;
+type ContentImageSlot = {
+  alt?: string;
+  caption?: string;
+  credit?: ResolvedAuthorCreditSnapshot | StoredAuthorCreditSnapshot;
+  variants?: {
+    xs?: RenderableImageVariant;
+    sm?: RenderableImageVariant;
+    md?: RenderableImageVariant;
+    lg?: RenderableImageVariant;
+    original?: RenderableImageVariant;
+  };
+};
+type ContentImagesJson = { content_images?: Record<string, ContentImageSlot> };
 import { safeParseJson } from "@shared/utils/hydration";
 
 const { article, settings } = Astro.props as {
-  article: Record<string, unknown>;
+  article: SiteArticleRenderModel;
   settings?: TocSettings;
 };
 
@@ -30,18 +53,17 @@ const parsed = normalizeContentDocument(article?.content_json).blocks;
 
 // Recipe/FAQ/Roundup from dedicated columns
 const recipe_json = article?.recipe_json
-  ? safeParseJson<Record<string, unknown>>(article.recipe_json)
+  ? safeParseJson(article.recipe_json)
   : null;
 const roundup_json = article?.roundup_json
-  ? safeParseJson<Record<string, unknown>>(article.roundup_json)
+  ? safeParseJson<RoundupJson>(article.roundup_json)
   : null;
 const images_json = article?.images_json
-  ? safeParseJson<Record<string, unknown>>(article.images_json)
+  ? safeParseJson<ContentImagesJson>(article.images_json) || {}
   : {};
 
-// Author/category from hydration
-const author = (article as Record<string, unknown>)?.author || null;
-const category = (article as Record<string, unknown>)?.category || null;
+const author = article.author;
+const category = article.category;
 
 // Heading numbering
 const numberingEnabled = settings?.numbering ?? true;
@@ -70,21 +92,20 @@ const processedBlocks = parsed.map((block: NormalizedContentBlock) => {
     return { ...block, headingNumber: num };
   }
   if (block?.type === "before_after") {
-    const contentImages = ((images_json as Record<string, unknown>)?.content_images || {}) as Record<string, Record<string, unknown>>;
-    const b = block as Record<string, unknown>;
-    const resolveSlot = (ref: unknown, label: unknown) => {
-      const slot = typeof ref === "string" ? contentImages[ref] : null;
+    const contentImages = images_json.content_images || {};
+    const resolveSlot = (ref: string, label: string | undefined) => {
+      const slot = contentImages[ref];
       if (!slot) return undefined;
       return {
         ...slot,
-        imageAlt: (slot.alt as string) || "",
-        label: (label as string) || (slot.label as string) || undefined,
+        imageAlt: slot.alt || "",
+        label,
       };
     };
     return {
       ...block,
-      before: resolveSlot(b.before_image_ref, b.before_label),
-      after: resolveSlot(b.after_image_ref, b.after_label),
+      before: resolveSlot(block.before_image_ref, block.before_label),
+      after: resolveSlot(block.after_image_ref, block.after_label),
     };
   }
   return block;
@@ -95,7 +116,7 @@ const hasRoundupList = processedBlocks.some(
   (b: NormalizedContentBlock) => b.type === "main_roundup",
 );
 const standaloneRoundup =
-  !hasRoundupList && (roundup_json as Record<string, unknown>)?.items?.length > 0;
+  !hasRoundupList && (roundup_json?.items.length ?? 0) > 0;
 ---
 
 <div class="content-blocks">
@@ -116,7 +137,7 @@ const standaloneRoundup =
         return (
           <Image
             block={{
-              ...(images_json?.content_images?.[block.image_ref] || {}),
+              ...(images_json.content_images?.[block.image_ref] || {}),
               ...block,
             }}
           />
