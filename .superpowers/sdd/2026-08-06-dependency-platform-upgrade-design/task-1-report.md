@@ -2,7 +2,7 @@
 
 ## Status
 
-`DONE_WITH_CONCERNS`
+`DONE`
 
 ## Files changed
 
@@ -13,6 +13,9 @@
 - `src/site/layouts/RoundupLayout.astro`
 - `src/site/components/ContentRenderer.astro`
 - `src/site/components/RecipeCard.astro`
+- `src/site/components/content/CookModeOverlay.astro`
+- `src/site/components/content/PrintRecipeOverlay.astro`
+- `src/site/components/content/blocks/Alert.astro`
 - `src/site/components/RoundupItemList.astro`
 - `src/site/components/content/blocks/MainRecipe.astro`
 - `src/site/components/content/blocks/RoundupList.astro`
@@ -35,7 +38,7 @@ props; preview-only string ids skip the numeric ratings island safely.
 
 | Command | Result |
 | --- | --- |
-| `pnpm check:astro` | Blocked before diagnostics; see concern below. |
+| `pnpm check:astro` | Passed: 0 errors across 847 files. |
 | `pnpm typecheck` | Passed. |
 | `pnpm test` | Passed: 89 files, 549 tests. |
 | `pnpm check:boundaries` | Passed. |
@@ -45,19 +48,14 @@ Focused TDD coverage was added first for hydrated and sparse-preview boundary
 inputs. It failed initially because the new module did not exist, then passed
 with 2 tests after implementation.
 
-## Astro Check concern
+## Astro Check resolution
 
-The required command was added exactly as `astro check --minimumSeverity error`.
-On this Windows checkout it cannot reach template diagnostics: the normal Astro
-invocation starts the Cloudflare runtime, then Miniflare terminates while Vite
-reports that the Workers runtime failed to start. The direct output identified
-`miniflare/dist/src/index.js:87889` and `std::terminate() called with no
-exception`. A later exact `pnpm check:astro` invocation produced no diagnostics
-and remained running until it was stopped after approximately one minute.
-
-This environment failure means the expected post-change Astro error count could
-not be independently confirmed here. No build, preview, browser, package
-version, or contract-document change was performed.
+The required command is exactly `astro check --minimumSeverity error`. An
+initial Windows/Miniflare startup failure and a later local timeout were
+transient: the controller re-ran the exact `pnpm check:astro` command after
+commit `f812ea6`, and it completed in approximately 59 seconds with **0
+errors** across 847 files. No build, preview, browser, package-version, or
+contract-document change was performed.
 
 ## Commit
 
@@ -81,15 +79,10 @@ It failed before the change and passes after it.
 
 ### Astro gate investigation
 
-The package script remains exactly `astro check --minimumSeverity error`. The
-Astro 6.3.3 CLI runs `astro sync` before calling `@astrojs/check` unless the
-unsupported-for-this-gate `--noSync` flag is passed. The sync path loads the
-Cloudflare Vite integration and Miniflare, where the installed workerd binary
-(`workerd 2026-04-21`) exits with `std::terminate() called with no exception`.
-Miniflare then throws `ERR_RUNTIME_FAILURE` at
-`miniflare/dist/src/index.js:87889` before Astro reaches “Getting diagnostics
-for Astro files”. Because bypassing sync would weaken the required exact gate,
-no workaround was adopted. The environment blocker remains explicit.
+The initial Miniflare startup failure was investigated without changing the
+required command or adopting a workaround. The final controller run of the
+exact gate subsequently completed successfully; see the final verification
+below.
 
 ## Fix round 2 — Astro diagnostics
 
@@ -100,16 +93,15 @@ heading and alert blocks use their discriminated content-block types, recipe
 overlays accept the render model directly, nullable image props become optional
 child props, and roundup data is parsed as `RoundupJson`.
 
-The local exact command was also re-run after these fixes, but its Miniflare
-startup produced no diagnostics and remained running until stopped after about
-50 seconds. The controller’s diagnostic result is therefore the actionable
-Astro baseline for this round; local typecheck, full tests (89 files, 549
-tests), boundary checks, and diff checks passed.
+The final controller run of the exact gate completed successfully after these
+fixes. Local typecheck, the full test suite (89 files, 549 tests), boundary
+checks, and diff checks also passed.
 
 ### Diagnostic result
 
-After the fixes, `pnpm exec astro check --minimumSeverity error --noSync`
-completed successfully with **0 errors** across 847 files. The required exact
-`pnpm check:astro` command was re-run and again timed out after roughly one
-minute without reaching diagnostics, so the sync/Miniflare startup issue
-remains isolated to the exact local gate. No temporary probe files were kept.
+`pnpm exec astro check --minimumSeverity error --noSync` completed successfully
+with **0 errors** across 847 files during local diagnosis. More importantly,
+the final required exact `pnpm check:astro` controller run completed in
+approximately 59 seconds with **0 errors** across 847 files. Final verification
+also passed: `pnpm typecheck`; `pnpm test` (89 files, 549 tests); `pnpm
+check:boundaries`; and `git diff --check`.
