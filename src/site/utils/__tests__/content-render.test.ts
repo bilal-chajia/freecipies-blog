@@ -47,4 +47,21 @@ describe('normalizeArticleForRender', () => {
     expect(article.author).toBeNull();
     expect(article.category).toBeNull();
   });
+
+  it('keeps form-derived preview relations when the separately fetched relations are null', () => {
+    const article = normalizeArticleForRender(
+      {
+        id: 'preview',
+        slug: 'preview',
+        headline: 'Preview Title',
+        short_description: 'Preview Description',
+        author: { name: 'Preview Author', slug: 'preview-author' },
+        category: { label: 'Preview Category', slug: 'preview-category', color: '#f60' },
+      },
+      { author: null, category: null },
+    );
+
+    expect(article.author).toMatchObject({ name: 'Preview Author', slug: 'preview-author' });
+    expect(article.category).toMatchObject({ label: 'Preview Category', slug: 'preview-category' });
+  });
 });

@@ -105,8 +105,8 @@ export function normalizeArticleForRender(
   related: { author?: unknown; category?: unknown } = {},
 ): SiteArticleRenderModel {
   const article = isRecord(value) ? value : {};
-  const relatedAuthor = related.author === undefined ? article.author : related.author;
-  const relatedCategory = related.category === undefined ? article.category : related.category;
+  const relatedAuthor = related.author ?? article.author;
+  const relatedCategory = related.category ?? article.category;
   const numericId = numberOrNull(article.id);
   const stringId = stringOrEmpty(article.id);
 

@@ -62,3 +62,31 @@ version, or contract-document change was performed.
 ## Commit
 
 `f51cae44575c0ca434bf95101f1df5fb7090b036` (amended below to include this report).
+
+## Fix round 1 — preview relations and Astro gate investigation
+
+### Preview relation fix
+
+`src/pages/api/preview/render.astro` constructs fallback `recipe.author` and
+`recipe.category` values from form data, but calls `RecipeLayout` with separate
+database relation arguments that remain `null` when no saved relation exists.
+The original boundary treated `null` as an explicit override, discarding those
+valid nested fallbacks. `normalizeArticleForRender()` now uses the separate
+relation only when it is non-nullish, preserving a fetched production relation
+when present and the nested preview fallback otherwise.
+
+Added a focused regression test for the actual call shape: nested preview
+author/category values plus `{ author: null, category: null }` relation args.
+It failed before the change and passes after it.
+
+### Astro gate investigation
+
+The package script remains exactly `astro check --minimumSeverity error`. The
+Astro 6.3.3 CLI runs `astro sync` before calling `@astrojs/check` unless the
+unsupported-for-this-gate `--noSync` flag is passed. The sync path loads the
+Cloudflare Vite integration and Miniflare, where the installed workerd binary
+(`workerd 2026-04-21`) exits with `std::terminate() called with no exception`.
+Miniflare then throws `ERR_RUNTIME_FAILURE` at
+`miniflare/dist/src/index.js:87889` before Astro reaches “Getting diagnostics
+for Astro files”. Because bypassing sync would weaken the required exact gate,
+no workaround was adopted. The environment blocker remains explicit.
