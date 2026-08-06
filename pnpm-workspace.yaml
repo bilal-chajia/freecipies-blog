@@ -2,7 +2,6 @@ allowBuilds:
   esbuild: true
   msw: true
   sharp: true
-  sqlite3: set this to true or false
   workerd: true
 onlyBuiltDependencies:
   - esbuild

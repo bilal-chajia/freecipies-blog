@@ -3,7 +3,7 @@
 ## Changes
 
 - Removed the eleven specified unused direct dependencies from `package.json`.
-- Regenerated `pnpm-lock.yaml` with `pnpm install --lockfile-only --ignore-scripts --force --config.strict-dep-builds=false --config.auto-install-peers=false`.
+- Regenerated `pnpm-lock.yaml` with `pnpm install --lockfile-only --ignore-scripts --force --config.strict-dep-builds=false`, restoring the baseline `settings.autoInstallPeers: true`.
 - Removed the four obsolete Vite SSR external entries and the `sqlite3` build allowance.
 - Left the Vite override unchanged.
 
@@ -13,12 +13,12 @@ The regenerated lockfile has no `sqlite3@6.0.1` package or Drizzle `sqlite3` sna
 
 | Command | Result |
 | --- | --- |
-| `pnpm check:astro` | Blocked before Astro ran. First, pnpm refused to remove the out-of-date `node_modules` layout without a TTY. The CI/script-disabled retry recreated it but rejected the lockfile because its `autoInstallPeers: false` setting did not match the default runtime setting. A retry with `PNPM_CONFIG_AUTO_INSTALL_PEERS=false` was terminated after continued relinking to avoid an unbounded wait. |
-| `pnpm typecheck` | Not run: the failed verification relink removed the old `node_modules` layout. |
-| `pnpm test` | Not run: the failed verification relink removed the old `node_modules` layout. |
-| `pnpm check:boundaries` | Not run: the failed verification relink removed the old `node_modules` layout. |
-| `pnpm audit --prod --json` | Completed; 0 critical, 26 high, 41 moderate, 11 low. Exit 1 is pnpm's normal nonzero result when advisories exist. |
-| `pnpm audit --json` | Completed; 0 critical, 36 high, 63 moderate, 14 low. Exit 1 is pnpm's normal nonzero result when advisories exist. |
+| `pnpm check:astro` | Blocked before Astro ran: after the lockfile-only regeneration, the CI frozen install/relink remained without progress or output for several minutes and was safely terminated. |
+| `pnpm typecheck` | Not run: the dependency relink did not complete. |
+| `pnpm test` | Not run: the dependency relink did not complete. |
+| `pnpm check:boundaries` | Not run: the dependency relink did not complete. |
+| `pnpm audit --prod --json` | Completed; 0 critical, 26 high, 41 moderate, 11 low; 1,080 total dependencies. Exit 1 is pnpm's normal nonzero result when advisories exist. |
+| `pnpm audit --json` | Completed; 0 critical, 36 high, 63 moderate, 14 low; 1,480 total dependencies. Exit 1 is pnpm's normal nonzero result when advisories exist. |
 | `git diff --check` | Passed. |
 | Source search | No references to ten exact package specifiers under `src` or `scripts`; `openai` appears only as the application's provider/protocol identifier, not an `openai` SDK import. |
 
@@ -28,4 +28,4 @@ The critical `drizzle-orm > sqlite3 > tar` path is removed: neither `sqlite3@6.0
 
 ## Concern
 
-The lockfile records `settings.autoInstallPeers: false`, which must also be supplied when a clean install is performed (for example, `PNPM_CONFIG_AUTO_INSTALL_PEERS=false`). Without it, pnpm rejects a frozen install. The interrupted verification relink removed the previous `node_modules` layout, so a matching clean install is required before the three remaining local checks can run.
+The lockfile now uses the baseline `settings.autoInstallPeers: true`; its frozen install no longer has a configuration mismatch. However, the replacement `node_modules` relink remained without progress/output for several minutes and was terminated, so a successful clean install is still required before the four local checks can run.
