@@ -48,11 +48,6 @@ export default defineConfig({
         'node:fs/promises',
         'node:path',
         'node:worker_threads',
-        // Server-only — no browser bundle needed
-        '@anthropic-ai/sdk',
-        'openai',
-        '@google/generative-ai',
-        'aws4fetch',
       ],
     },
     server: {
