@@ -27,7 +27,7 @@
     "check:boundaries": "node scripts/check-boundaries.mjs"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^13.1.7",
+    "@astrojs/cloudflare": "^14.2.0",
     "@blocknote/core": "^0.47.3",
     "@blocknote/mantine": "^0.47.3",
     "@blocknote/react": "^0.47.3",
@@ -69,7 +69,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-table": "^8.21.3",
-    "astro": "^6.3.3",
+    "astro": "^7.2.0",
     "axios": "^1.19.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -103,16 +103,17 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@astrojs/check": "0.9.8",
-    "@astrojs/react": "^5.0.3",
-    "@cloudflare/workers-types": "^4.20260408.1",
+    "@astrojs/check": "^0.9.10",
+    "@astrojs/react": "^6.0.2",
+    "@cloudflare/workers-types": "^5.20260804.1",
+    "@vitejs/plugin-react": "^5.2.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "drizzle-kit": "^0.31.10",
     "shadcn": "^4.16.2",
     "sql.js": "^1.14.1",
     "typescript": "^6.0.3",
-    "vite": "^7",
+    "vite": "^8.2.1",
     "vitest": "^4.1.10",
     "wrangler": "^4.119.0"
   }

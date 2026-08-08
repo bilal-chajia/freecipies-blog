@@ -160,7 +160,6 @@ const buildHref = (item: RenderItem) => {
 <section class:list={["rc-section", `rc-is-${layout}`]}>
   <!-- Section header -->
   {layout === "list" ? (
-    <!-- List layout: wrapped in a card container with header -->
     <div class="rc-list-wrapper">
       <div class="rc-list-header">
         <h2 class="rc-list-title">{title}</h2>
@@ -234,7 +233,6 @@ const buildHref = (item: RenderItem) => {
       </div>
     </div>
   ) : (
-    <!-- Grid & Carousel: open header -->
     <>
       <div class="rc-header">
         <h2 class="rc-title">{title}</h2>
@@ -280,7 +278,6 @@ const buildHref = (item: RenderItem) => {
                         </svg>
                       </div>
                     )}
-                    <!-- Hover gradient overlay -->
                     <div class="rc-overlay" />
                   </div>
                   <div class="rc-body">

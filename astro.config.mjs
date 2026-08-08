@@ -26,6 +26,7 @@ const fixWatcherPlugin = () => ({
 // https://astro.build/config
 export default defineConfig({
   site: env.SITE_URL || 'http://localhost:4321',
+  compressHTML: true,
   integrations: [react()],
   devToolbar: {
     enabled: false,
@@ -42,13 +43,6 @@ export default defineConfig({
     plugins: [fixWatcherPlugin(), ...tailwindcss()],
     resolve: {
       dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
-    },
-    ssr: {
-      external: [
-        'node:fs/promises',
-        'node:path',
-        'node:worker_threads',
-      ],
     },
     server: {
       allowedHosts: true,
@@ -77,7 +71,7 @@ export default defineConfig({
     },
     build: {
       target: 'esnext',
-      // minify defaults to esbuild — optimal for Workers
+      // Vite 8 uses the Oxc minifier by default; keep the Workers target explicit.
       sourcemap: false,
       chunkSizeWarningLimit: 2000,
       // Note: manualChunks cannot be used here — the Cloudflare adapter
