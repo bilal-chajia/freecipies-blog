@@ -29,7 +29,7 @@
           overflow: visible;
         }
 
-        .block-editor-wrapper .bn-container {
+        .block-editor-wrapper .bn-root {
           min-height: inherit;
           background-color: transparent !important;
           border: none !important;
@@ -325,7 +325,7 @@
         }
 
         /* Force high contrast text and headings in dark mode */
-        .block-editor-wrapper .bn-container,
+        .block-editor-wrapper .bn-root,
         .block-editor-wrapper .bn-editor,
         .block-editor-wrapper .ProseMirror,
         .block-editor-wrapper .bn-editor p,
