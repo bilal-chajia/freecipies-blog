@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router';
 import { useAuthStore } from '../store/useStore';
 import AdminLayout from '../components/AdminLayout';
 import ThemeProvider from '../components/ThemeProvider';
@@ -9,6 +9,7 @@ import '../index.css';
 import { Login, adminLayoutRoutes, fullScreenAdminRoutes } from './routes';
 import type { AdminLayoutRoute } from './routes';
 import PageLoader from '../components/PageLoader';
+import { getProtectedRouteDestination } from './route-contract';
 
 import { Suspense, useEffect } from 'react';
 
@@ -34,8 +35,10 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated } = useAuthStore();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  const destination = getProtectedRouteDestination(isAuthenticated);
+
+  if (destination) {
+    return <Navigate to={destination} replace />;
   }
 
   return <>{children}</>;

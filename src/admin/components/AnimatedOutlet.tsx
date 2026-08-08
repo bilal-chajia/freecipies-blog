@@ -1,21 +1,20 @@
-import { useOutlet, useLocation } from 'react-router-dom';
+import { useOutlet, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-
-const editorRegex = /\/(articles|recipes|roundups)\/(new|[^/]+)$/;
+import { getAnimatedOutletKey } from '../app/route-contract';
 
 export function AnimatedOutlet() {
   const outlet = useOutlet();
   const location = useLocation();
-  const isEditor = editorRegex.test(location.pathname);
+  const outletKey = getAnimatedOutletKey(location.pathname);
 
-  if (isEditor) {
+  if (outletKey === null) {
     return <div className="contents">{outlet}</div>;
   }
 
   return (
     <AnimatePresence mode="wait">
       <motion.div
-        key={location.pathname}
+        key={outletKey}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}

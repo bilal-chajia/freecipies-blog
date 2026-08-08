@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { AnimatePresence } from 'motion/react';
 import { ChevronRight, Eye, Save, Loader2, LayoutTemplate, Code, PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import { LoadingState } from '@/components/ui/LoadingState';

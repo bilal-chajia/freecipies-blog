@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Trash2, Star, Eye, EyeOff, FolderTree, ExternalLink } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Card } from '@/ui/card';

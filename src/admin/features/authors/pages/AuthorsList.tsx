@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
 import { Switch } from '@/ui/switch';

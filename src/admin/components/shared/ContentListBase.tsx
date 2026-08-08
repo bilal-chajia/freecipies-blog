@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import type { LucideIcon } from 'lucide-react';
 import type { ColumnDef, Row } from '@tanstack/react-table';
 import { motion } from 'motion/react';

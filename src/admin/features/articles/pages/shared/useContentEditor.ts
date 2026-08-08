@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { articlesAPI, categoriesAPI, authorsAPI, tagsAPI } from '../../../../services/api';
 import { buildImageSlotFromMedia, generateSlug, isValidJSON } from '../../../../utils/helpers';
