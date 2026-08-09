@@ -6,16 +6,19 @@ SaaS Blog is a recipe and food blog SaaS built as one Astro application: a publi
 
 | Layer | Technology |
 | --- | --- |
-| Framework | Astro 6, `output: 'server'` |
-| Admin UI | React 19, React Router, Zustand |
-| Styling | Tailwind CSS 4, Radix UI, shadcn/ui |
+| Framework | Astro 7.2.0, `output: 'server'` |
+| Admin UI | React 19.2.8, React Router 8.3.0, Zustand 5.0.14 |
+| Styling | Tailwind CSS 4.3.3, Radix UI, shadcn/ui 4.16.2 |
 | Database | Cloudflare D1 with Drizzle |
 | Storage | Cloudflare R2 for images |
 | Sessions | Cloudflare KV |
-| Runtime | Cloudflare Workers via `@astrojs/cloudflare` |
-| Package manager | pnpm only |
+| Runtime | Cloudflare Workers via `@astrojs/cloudflare` 14.2.0 |
+| Build tool | Vite 8.2.1 (Rolldown/Oxc) |
+| Package manager | pnpm 11.20.0 only |
 
 Key current versions are declared in `package.json`.
+
+The dependency/platform upgrade was validated on 2026-08-09. The codebase now uses TanStack Table 9, BlockNote 0.52.1, Mantine 9.5.1, DayPicker 10, Motion 13, NanoID 6, and the refreshed Radix family. Two expected peer notices remain documented in the final upgrade report: Lobe UI requests Motion 12, and transitive Emoji Mart requests React 16–18.
 
 ## Commands
 

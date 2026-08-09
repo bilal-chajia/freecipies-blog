@@ -6,7 +6,7 @@
  */
 
 import { motion, AnimatePresence } from 'motion/react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/ui/scroll-area';
 import { Button } from '@/ui/button';

@@ -2,6 +2,7 @@
 import type {
   RoundupJson,
 } from "@modules/articles/types/roundups.types";
+import type { MainRoundupBlock } from '@modules/content-blocks/contract/content-blocks.types';
 import {
   extractImage,
   getImageSrcSet,
@@ -12,9 +13,9 @@ import AuthorBadge from "./AuthorBadge.astro";
 type RoundupItem = NonNullable<RoundupJson["items"]>[number];
 
 interface Props {
-  roundup?: Record<string, unknown>;
-  block?: Record<string, unknown>;
-  roundup_json?: Record<string, unknown>;
+  roundup?: RoundupJson | string | null;
+  block?: MainRoundupBlock;
+  roundup_json?: RoundupJson | string | null;
   startNumber?: number;
 }
 
@@ -29,16 +30,22 @@ const {
 // same roundup_json shape. Pick whichever prop was supplied and parse once.
 const rawRoundup =
   block?.type === "main_roundup" ? rawRoundupJson : rawRoundupProp;
-const roundup: RoundupJson =
-  (typeof rawRoundup === "string"
-    ? (() => {
-        try {
-          return JSON.parse(rawRoundup);
-        } catch {
-          return null;
-        }
-      })()
-    : rawRoundup) || { list_type: "ItemList", items: [] };
+const isRoundupJson = (value: unknown): value is RoundupJson =>
+  typeof value === 'object' && value !== null && !Array.isArray(value) &&
+  (value as { list_type?: unknown }).list_type === 'ItemList' &&
+  Array.isArray((value as { items?: unknown }).items);
+const parsedRoundup = typeof rawRoundup === 'string'
+  ? (() => {
+      try {
+        return JSON.parse(rawRoundup) as unknown;
+      } catch {
+        return null;
+      }
+    })()
+  : rawRoundup;
+const roundup: RoundupJson = isRoundupJson(parsedRoundup)
+  ? parsedRoundup
+  : { list_type: "ItemList", items: [] };
 
 const items: RoundupItem[] = [...(roundup.items || [])].sort(
   (a: RoundupItem, b: RoundupItem) => (a.position || 0) - (b.position || 0),
@@ -60,12 +67,18 @@ const renderedItems = items.map((item, index) => {
   const title = item.title || "Untitled";
   const subtitle = item.subtitle || item.description || "";
   const note = item.note || "";
-  let imgData: Record<string, any> = {};
+  let imgData: {
+    image_url?: string;
+    imageAlt?: string;
+    imageWidth?: number;
+    imageHeight?: number;
+    imageStyle?: string;
+  } = {};
   let srcSet = "";
 
   if (item.image?.variants) {
     const slots = { thumbnail: item.image };
-    imgData = extractImage(JSON.stringify(slots), "thumbnail", 800) as Record<string, any>;
+    imgData = extractImage(JSON.stringify(slots), "thumbnail", 800);
     srcSet = getImageSrcSet(JSON.stringify(slots), "thumbnail");
   }
 

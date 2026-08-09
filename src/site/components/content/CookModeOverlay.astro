@@ -1,9 +1,9 @@
 ---
 import Icon from "../ui/Icon.astro";
-import type { Article } from "@modules/articles/schema/articles.schema";
+import type { SiteArticleRenderModel } from "@site/utils/content-render";
 
 interface Props {
-  article: Article;
+  article: SiteArticleRenderModel;
   heroImageUrl?: string | null;
 }
 

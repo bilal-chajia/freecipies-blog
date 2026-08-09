@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import type { LucideIcon } from 'lucide-react';
-import type { ColumnDef, Row } from '@tanstack/react-table';
 import { motion } from 'motion/react';
 import {
     Plus,
@@ -32,7 +31,7 @@ import {
     Card,
     CardContent,
 } from '@/ui/card';
-import DataTable from '@/ui/data-table';
+import DataTable, { type DataTableColumnDef, type DataTableRow } from '@/ui/data-table';
 import { extractImage, getImageSrcSet } from '@shared/utils';
 import { articlesAPI, categoriesAPI, authorsAPI, tagsAPI } from '../../services/api';
 import { formatDate, formatRelativeTime, formatNumber, debounce, toAdminImageUrl, toAdminSrcSet } from '../../utils/helpers';
@@ -305,11 +304,11 @@ const ContentListBase = ({
         });
     }, [localFilters]);
 
-    const columns = useMemo<ColumnDef<ContentListItem>[]>(() => [
+    const columns = useMemo<DataTableColumnDef<ContentListItem>[]>(() => [
         {
             accessorKey: 'label',
             header: 'Content',
-            cell: ({ row }: { row: Row<ContentListItem> }) => {
+            cell: ({ row }: { row: DataTableRow<ContentListItem> }) => {
                 const item = row.original;
                 const image_url = toAdminImageUrl(item.image_url || '');
                 const imageAlt = item.imageAlt || item.headline || '';
@@ -359,7 +358,7 @@ const ContentListBase = ({
             accessorKey: 'authorName',
             header: 'Author',
             meta: { className: 'hidden md:table-cell' },
-            cell: ({ row }: { row: Row<ContentListItem> }) => {
+            cell: ({ row }: { row: DataTableRow<ContentListItem> }) => {
                 const item = row.original;
                 return (
                     <div className="flex items-center gap-2">
@@ -377,7 +376,7 @@ const ContentListBase = ({
         {
             accessorKey: 'workflow_status',
             header: 'Status',
-            cell: ({ row }: { row: Row<ContentListItem> }) => {
+            cell: ({ row }: { row: DataTableRow<ContentListItem> }) => {
                 const status = row.original.workflow_status || 'draft';
                 const statusColors: Record<string, string> = {
                     published: 'bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20',
@@ -408,7 +407,7 @@ const ContentListBase = ({
             accessorKey: 'published_at',
             header: 'Date',
             meta: { className: 'hidden md:table-cell' },
-            cell: ({ row }: { row: Row<ContentListItem> }) => (
+            cell: ({ row }: { row: DataTableRow<ContentListItem> }) => (
                 <div className="flex flex-col">
                     <span className="text-sm font-medium">
                         {formatDate(row.original.published_at || row.original.created_at, 'MMM dd, yyyy')}
@@ -422,7 +421,7 @@ const ContentListBase = ({
         {
             id: 'actions',
             header: '',
-            cell: ({ row }: { row: Row<ContentListItem> }) => {
+            cell: ({ row }: { row: DataTableRow<ContentListItem> }) => {
                 const item = row.original;
                 return (
                     <div className="flex items-center justify-end gap-2">

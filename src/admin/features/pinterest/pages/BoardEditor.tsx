@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { Save, ArrowLeft, Image as ImageIcon, X } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';

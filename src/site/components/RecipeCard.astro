@@ -11,14 +11,9 @@ import Icon from "./ui/Icon.astro";
  * - Cook mode toggle
  */
 
-import type { Article } from "@modules/articles/schema/articles.schema";
-import type { Author } from "@modules/authors/schema/authors.schema";
-import type { Category } from "@modules/categories/schema/categories.schema";
-import type { RecipeJson } from "@modules/articles/types/recipes.types";
-import type { ArticleImagesJson } from "@shared/types/images";
-import { resolveVariantUrl } from "@shared/types/images";
 import { extractImage, getImageSrcSet, formatAmount, formatTime } from "@shared/utils";
 import { normalizeRecipeForRender } from "@site/utils/recipe-render";
+import type { SiteArticleRenderModel, SiteAuthorRenderModel, SiteCategoryRenderModel } from "@site/utils/content-render";
 
 import IngredientsSection from "./content/IngredientsSection.astro";
 import InstructionsSection from "./content/InstructionsSection.astro";
@@ -29,26 +24,16 @@ import CookModeOverlay from "./content/CookModeOverlay.astro";
 import RatingSystem from "./content/RatingSystem";
 
 interface Props {
-  article: Article;
-  recipe_json: RecipeJson | null;
-  author?: Author | null;
-  category?: Category | null;
+  article: SiteArticleRenderModel;
+  recipe_json: unknown;
+  author?: SiteAuthorRenderModel | null;
+  category?: SiteCategoryRenderModel | null;
   showImage?: boolean;
   showDescription?: boolean;
   showRating?: boolean;
   showActions?: boolean;
   embedded?: boolean;
 }
-
-/** Author records may carry legacy/extra avatar fields not on the typed schema. */
-type AvatarSlotLike = {
-  url?: string;
-  variants?: { xs?: { url?: string }; sm?: { url?: string } };
-};
-type AuthorWithImageFallbacks = Author & {
-  avatar?: string | AvatarSlotLike | null;
-  image_url?: string | null;
-};
 
 const {
   article,
@@ -65,10 +50,6 @@ const {
 const TitleTag = embedded ? "h2" : "h1";
 
 const recipe = normalizeRecipeForRender(recipe_json);
-
-const images_json: ArticleImagesJson = article.images_json
-  ? JSON.parse(article.images_json)
-  : {};
 
 const heroImage = extractImage(article.images_json, "hero", 1200);
 const heroSlotSrcSet = getImageSrcSet(article.images_json, "hero");
@@ -204,23 +185,15 @@ const navItems = [
                 itemtype="https://schema.org/Person"
               >
                 {(() => {
-                  const authorData = author as AuthorWithImageFallbacks;
                   let authorImgUrl = "";
-                  if (authorData.images_json) {
-                    authorImgUrl = extractImage(authorData.images_json, "avatar").image_url || "";
+                  if (author.images_json) {
+                    authorImgUrl = extractImage(author.images_json, "avatar").image_url || "";
                   }
-                  if (!authorImgUrl && authorData.avatar) {
-                    if (typeof authorData.avatar === "string") {
-                      authorImgUrl = authorData.avatar;
-                    } else if (typeof authorData.avatar === "object") {
-                      const avatarSlot = authorData.avatar;
-                      const variants = avatarSlot.variants || {};
-                      const bestVariant = variants.xs || variants.sm || null;
-                      authorImgUrl = resolveVariantUrl(bestVariant) || avatarSlot.url || "";
-                    }
+                  if (!authorImgUrl && typeof author.avatar === "string") {
+                    authorImgUrl = author.avatar;
                   }
-                  if (!authorImgUrl && authorData.image_url) {
-                    authorImgUrl = authorData.image_url;
+                  if (!authorImgUrl && author.image_url) {
+                    authorImgUrl = author.image_url;
                   }
 
                   const hasAuthorImage = authorImgUrl.length > 0;
@@ -261,15 +234,17 @@ const navItems = [
               </div>
             )}
 
-            <div class="recipe-rating-card">
-              <RatingSystem
-                client:idle
-                article_id={article.id}
-                initialValue={rating?.rating_value || 0}
-                initialCount={rating?.rating_count || 0}
-                size="lg"
-              />
-            </div>
+            {typeof article.id === "number" && (
+              <div class="recipe-rating-card">
+                <RatingSystem
+                  client:idle
+                  article_id={article.id}
+                  initialValue={rating?.rating_value || 0}
+                  initialCount={rating?.rating_count || 0}
+                  size="lg"
+                />
+              </div>
+            )}
           </div>
 
           {/* Title - Uses dynamic tag for SEO (H2 when embedded) */}
@@ -554,10 +529,10 @@ const navItems = [
       {/* Print Preview Overlay */}
       <PrintRecipeOverlay
         article={article}
-        recipe={recipe as RecipeJson}
+        recipe={recipe}
         author={author}
-        heroImageUrl={heroImage.image_url}
-        heroImageAlt={heroImage.imageAlt}
+        heroImageUrl={heroImage.image_url ?? undefined}
+        heroImageAlt={heroImage.imageAlt ?? undefined}
       />
     </div>
   )

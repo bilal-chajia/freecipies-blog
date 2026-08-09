@@ -8,7 +8,8 @@ Freecipies Blog: Astro app with public SSR site, React admin SPA, and Cloudflare
 
 ## Stack
 
-- Astro 6.3.3, React 19, Tailwind CSS 4, TypeScript 6 strict
+- Astro 7.2.0, React 19.2.8, Tailwind CSS 4.3.3, Vite 8.2.1
+- TypeScript 6 strict, React Router 8.3.0, pnpm 11.20.0
 - Drizzle ORM, Zod 4
 - Cloudflare Workers via `@astrojs/cloudflare`
 - D1 SQLite, R2 images, KV sessions

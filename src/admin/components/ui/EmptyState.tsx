@@ -1,6 +1,6 @@
 import { FileText, Search, FolderOpen, Users, Image, Settings, Pin, AlertCircle, Inbox } from "lucide-react";
 import { Button } from "@/ui/button";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import type { ReactNode } from "react";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {

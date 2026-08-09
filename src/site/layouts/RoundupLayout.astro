@@ -1,6 +1,5 @@
 ---
 import Layout from "./Layout.astro";
-import type { Category } from "@modules/categories/schema/categories.schema";
 import SocialShareBar from "../components/SocialShareBar.astro";
 import RecipeAuthorCard from "../components/RecipeAuthorCard.astro";
 import PopularRecipes from "../components/PopularRecipes.astro";
@@ -11,22 +10,24 @@ import HeroImage from "../components/content/HeroImage.astro";
 import TableOfContents from "../components/content/TableOfContents.astro";
 import { extractImage, getImageSrcSet } from "@shared/utils";
 import { safeParseJson } from "@shared/utils/hydration";
-import { resolveVariantUrl, getSrcSet, type ImageSlot } from "@shared/types/images";
+import type { RoundupJson } from "@modules/articles/types/roundups.types";
 import { getReadingTimeDisplay } from "@modules/articles/utils/cached-fields";
+import { normalizeArticleForRender } from "@site/utils/content-render";
 import {
   getPopularRecipes,
   getSiteTocSettings,
 } from "@server/site-data";
 interface Props {
-  article: Record<string, any>;
-  author?: Record<string, any> | null;
-  category?: Category | null;
+  article: unknown;
+  author?: unknown;
+  category?: unknown;
 }
 
-const { article, author, category } = Astro.props;
+const { article: rawArticle, author, category } = Astro.props;
+const article = normalizeArticleForRender(rawArticle, { author, category });
 
-const parsedRoundupJson = safeParseJson<Record<string, unknown>>(article.roundup_json) || { items: [] };
-const categoryColor = category?.color || "#ff6600";
+const parsedRoundupJson = safeParseJson<RoundupJson>(article.roundup_json);
+const categoryColor = article.category?.color || "#ff6600";
 
 const tocSettings = await getSiteTocSettings();
 const popularRecipes = await getPopularRecipes(article.slug, 5);
@@ -51,32 +52,22 @@ let authorAvatar: {
   imageStyle?: string;
 } = {};
 
-if (author) {
-  if (author.images_json) {
-    authorAvatar = extractImage(author.images_json, "avatar", 96);
-  } else if (author.avatar) {
-    const avatarSlot = author.avatar;
+if (article.author) {
+  if (article.author.images_json) {
+    authorAvatar = extractImage(article.author.images_json, "avatar", 96);
+  } else if (article.author.avatar) {
+    const avatarSlot = article.author.avatar;
     if (typeof avatarSlot === 'string') {
       authorAvatar = { image_url: avatarSlot, imageWidth: 96, imageHeight: 96 };
-    } else if (avatarSlot && typeof avatarSlot === 'object') {
-      const variants = avatarSlot.variants || {};
-      const bestVariant = variants.sm || variants.xs || null;
-      authorAvatar = {
-        image_url: resolveVariantUrl(bestVariant) || (avatarSlot as ImageSlot & { url?: string }).url || undefined,
-        imageAlt: avatarSlot.alt || undefined,
-        imageWidth: bestVariant?.width || 96,
-        imageHeight: bestVariant?.height || 96,
-        imageStyle: avatarSlot.focal_point ? `object-position: ${avatarSlot.focal_point.x}% ${avatarSlot.focal_point.y}%;` : undefined,
-      };
     }
   }
 }
 
-const authorAvatarSrcSet = author?.images_json
-  ? getImageSrcSet(author.images_json, "avatar")
-  : (author?.avatar && typeof author.avatar === 'object' ? getSrcSet(author.avatar as ImageSlot) : "");
+const authorAvatarSrcSet = article.author?.images_json
+  ? getImageSrcSet(article.author.images_json, "avatar")
+  : "";
 const authorAvatarSizes = authorAvatarSrcSet ? "48px" : undefined;
-const authorImage = authorAvatar.image_url || author?.image_url;
+const authorImage = authorAvatar.image_url || article.author?.image_url;
 
 const contentBlocks = normalizeContentDocument(article.content_json).blocks;
 
@@ -126,11 +117,11 @@ const contentBlocks = normalizeContentDocument(article.content_json).blocks;
         />
 
         <RecipeAuthorCard
-          authorName={author?.name || article.author?.name}
+          authorName={article.author?.name}
           authorImage={authorImage || undefined}
           authorImageSrcSet={authorAvatarSrcSet || undefined}
           authorImageSizes={authorAvatarSizes}
-          authorRole={author?.job || "Writer"}
+          authorRole={article.author?.job || "Writer"}
           lastUpdated={article.published_at || undefined}
           view_count={article.view_count}
         />
@@ -143,7 +134,7 @@ const contentBlocks = normalizeContentDocument(article.content_json).blocks;
         <TableOfContents toc={article.cached_toc_json} settings={tocSettings} />
 
         <HeroImage
-          src={heroSlot.image_url || heroThumb.image_url || article.image_url}
+          src={heroSlot.image_url || heroThumb.image_url || article.image_url || undefined}
           alt={heroSlot.imageAlt || heroThumb.imageAlt || article.headline}
           width={heroSlot.imageWidth || heroThumb.imageWidth}
           height={heroSlot.imageHeight || heroThumb.imageHeight}
@@ -161,7 +152,7 @@ const contentBlocks = normalizeContentDocument(article.content_json).blocks;
         }
 
         {
-          (contentBlocks.length > 0 || parsedRoundupJson?.items?.length > 0) && (
+          (contentBlocks.length > 0 || (parsedRoundupJson?.items.length ?? 0) > 0) && (
             <section class="content-section content-json-section">
               <ContentRenderer
                 article={article}

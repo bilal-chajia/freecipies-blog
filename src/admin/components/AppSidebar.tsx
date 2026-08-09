@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router";
 import {
   LayoutDashboard,
   FileText,
@@ -62,15 +62,16 @@ import { Switch } from "@/ui/switch";
 import { cn } from "@/lib/utils";
 import { useUIStore, useAuthStore } from "../store/useStore";
 import { clearAllAdminCache } from "../services/api-client";
+import { adminNavigation } from '../app/admin-navigation';
 
 // Navigation data structure
 const navGroups: NavGroup[] = [
   {
     title: "Main",
     items: [
-      { title: "Dashboard", url: "/", icon: LayoutDashboard },
-      { title: "Homepage", url: "/homepage", icon: Home },
-      { title: "Media Library", url: "/media", icon: Image },
+      { title: "Dashboard", url: adminNavigation.dashboard, icon: LayoutDashboard },
+      { title: "Homepage", url: adminNavigation.homepage, icon: Home },
+      { title: "Media Library", url: adminNavigation.media, icon: Image },
     ],
   },
   {
@@ -81,30 +82,30 @@ const navGroups: NavGroup[] = [
         icon: FileText,
         isSubmenu: true,
         items: [
-          { title: "Blog Posts", url: "/articles", icon: FileText },
-          { title: "Recipes", url: "/recipes", icon: Utensils },
-          { title: "Roundups", url: "/roundups", icon: Layers },
+          { title: "Blog Posts", url: adminNavigation.articles, icon: FileText },
+          { title: "Recipes", url: adminNavigation.recipes, icon: Utensils },
+          { title: "Roundups", url: adminNavigation.roundups, icon: Layers },
         ],
       },
-      { title: "Categories", url: "/categories", icon: FolderOpen },
-      { title: "Authors", url: "/authors", icon: Users },
-      { title: "Tags", url: "/tags", icon: Tags },
-      { title: "Equipment", url: "/equipment", icon: Wrench },
+      { title: "Categories", url: adminNavigation.categories, icon: FolderOpen },
+      { title: "Authors", url: adminNavigation.authors, icon: Users },
+      { title: "Tags", url: adminNavigation.tags, icon: Tags },
+      { title: "Equipment", url: adminNavigation.equipment, icon: Wrench },
     ],
   },
   {
     title: "Pinterest",
     icon: Share2,
     items: [
-      { title: "Boards", url: "/pinterest/boards", icon: Pin },
-      { title: "Templates", url: "/templates", icon: LayoutTemplate },
+      { title: "Boards", url: adminNavigation.pinterestBoards, icon: Pin },
+      { title: "Templates", url: adminNavigation.templates, icon: LayoutTemplate },
     ],
   },
   {
     title: "System",
     items: [
-      { title: "Settings", url: "/settings/general", icon: Settings },
-      { title: "Redirects", url: "/redirects", icon: ArrowRightLeft },
+      { title: "Settings", url: adminNavigation.settings, icon: Settings },
+      { title: "Redirects", url: adminNavigation.redirects, icon: ArrowRightLeft },
     ],
   },
 ];

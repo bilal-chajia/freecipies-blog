@@ -1,6 +1,5 @@
 ---
 import Layout from "./Layout.astro";
-import type { Category } from "@modules/categories/schema/categories.schema";
 import SocialShareBar from "../components/SocialShareBar.astro";
 import RecipeAuthorCard from "../components/RecipeAuthorCard.astro";
 import PopularRecipes from "../components/PopularRecipes.astro";
@@ -18,27 +17,23 @@ import RatingSystem from "../components/content/RatingSystem";
 import Breadcrumb from "../components/Breadcrumb.astro";
 
 import { extractImage, getImageSrcSet, resolveHeroImage } from "@shared/utils";
-import { resolveVariantUrl, getSrcSet, type ImageSlot } from "@shared/types/images";
 import { normalizeRecipeForRender } from "@site/utils/recipe-render";
+import { normalizeArticleForRender } from "@site/utils/content-render";
 import { getReadingTimeDisplay } from "@modules/articles/utils/cached-fields";
 import {
   getPopularRecipes,
   getSiteTocSettings,
 } from "@server/site-data";
 
-/**
- * Props use Record<string, any> because recipe & author arrive fully hydrated
- * with computed fields (label, metaTitle, image_url, authorName, categoryLabel,
- * job, etc.) that don't exist on the raw DB schema types.
- */
 interface Props {
-  recipe: Record<string, unknown>;
-  author?: Record<string, unknown> | null;
-  category?: Category | null;
+  recipe: unknown;
+  author?: unknown;
+  category?: unknown;
 }
 
-const { recipe, author, category } = Astro.props;
-const categoryColor = category?.color || "#ff6600";
+const { recipe: rawRecipe, author, category } = Astro.props;
+const recipe = normalizeArticleForRender(rawRecipe, { author, category });
+const categoryColor = recipe.category?.color || "#ff6600";
 
 const tocSettings = await getSiteTocSettings();
 const popularRecipes = await getPopularRecipes(recipe.slug, 5);
@@ -47,7 +42,7 @@ const recipe_json = normalizeRecipeForRender(recipe.recipe_json);
 
 const readingTime = getReadingTimeDisplay(recipe);
 
-const { image: heroImage, srcSet: heroSrcSet } = resolveHeroImage(recipe.images_json as string, 1200);
+const { image: heroImage, srcSet: heroSrcSet } = resolveHeroImage(recipe.images_json, 1200);
 const heroSizes = "(max-width: 768px) 90vw, min(1200px, 100vw - 4rem)";
 
 let authorAvatar: {
@@ -60,32 +55,22 @@ let authorAvatar: {
   imageStyle?: string;
 } = {};
 
-if (author) {
-  if (author.images_json) {
-    authorAvatar = extractImage(author.images_json, "avatar", 96);
-  } else if (author.avatar) {
-    const avatarSlot = author.avatar;
+if (recipe.author) {
+  if (recipe.author.images_json) {
+    authorAvatar = extractImage(recipe.author.images_json, "avatar", 96);
+  } else if (recipe.author.avatar) {
+    const avatarSlot = recipe.author.avatar;
     if (typeof avatarSlot === 'string') {
       authorAvatar = { image_url: avatarSlot, imageWidth: 96, imageHeight: 96 };
-    } else if (avatarSlot && typeof avatarSlot === 'object') {
-      const variants = avatarSlot.variants || {};
-      const bestVariant = variants.sm || variants.xs || null;
-      authorAvatar = {
-        image_url: resolveVariantUrl(bestVariant) || (avatarSlot as ImageSlot & { url?: string }).url || undefined,
-        imageAlt: avatarSlot.alt || undefined,
-        imageWidth: bestVariant?.width || 96,
-        imageHeight: bestVariant?.height || 96,
-        imageStyle: avatarSlot.focal_point ? `object-position: ${avatarSlot.focal_point.x}% ${avatarSlot.focal_point.y}%;` : undefined,
-      };
     }
   }
 }
 
-const authorAvatarSrcSet = author?.images_json
-  ? getImageSrcSet(author.images_json, "avatar")
-  : (author?.avatar && typeof author.avatar === 'object' ? getSrcSet(author.avatar as ImageSlot) : "");
+const authorAvatarSrcSet = recipe.author?.images_json
+  ? getImageSrcSet(recipe.author.images_json, "avatar")
+  : "";
 const authorAvatarSizes = authorAvatarSrcSet ? "48px" : undefined;
-const authorImage = authorAvatar.image_url || author?.image_url;
+const authorImage = authorAvatar.image_url || recipe.author?.image_url;
 const authorImageWidth = authorAvatar.imageWidth || 48;
 const authorImageHeight = authorAvatar.imageHeight || 48;
 const authorImageStyle = authorAvatar.imageStyle;
@@ -97,8 +82,8 @@ const truncate = (str: string, max: number) =>
 
 const breadcrumbItems = [
   { label: "Recipes", href: "/recipes" },
-  ...(category
-    ? [{ label: category.label, href: `/categories/${category.slug}` }]
+  ...(recipe.category
+    ? [{ label: recipe.category.label, href: `/categories/${recipe.category.slug}` }]
     : []),
   { label: truncate(String(recipe.headline ?? ""), 50) },
 ];
@@ -152,15 +137,17 @@ const breadcrumbItems = [
         <h1 class="recipe-title">{recipe.headline}</h1>
 
         <!-- Rating -->
-        <div class="recipe-rating-header">
-          <RatingSystem
-            client:visible
-            article_id={recipe.id}
-            initialValue={recipe_json?.aggregate_rating?.rating_value || 0}
-            initialCount={recipe_json?.aggregate_rating?.rating_count || 0}
-            size="lg"
-          />
-        </div>
+        {typeof recipe.id === "number" && (
+          <div class="recipe-rating-header">
+            <RatingSystem
+              client:visible
+              article_id={recipe.id}
+              initialValue={recipe_json?.aggregate_rating?.rating_value || 0}
+              initialCount={recipe_json?.aggregate_rating?.rating_count || 0}
+              size="lg"
+            />
+          </div>
+        )}
 
         <!-- Short Description -->
         {
@@ -177,14 +164,14 @@ const breadcrumbItems = [
 
         <!-- Author Card -->
         <RecipeAuthorCard
-          authorName={author?.name || recipe.author?.name}
+          authorName={recipe.author?.name}
           authorImage={authorImage || undefined}
           authorImageSrcSet={authorAvatarSrcSet || undefined}
           authorImageSizes={authorAvatarSizes}
           authorImageWidth={authorImageWidth}
           authorImageHeight={authorImageHeight}
           authorImageStyle={authorImageStyle}
-          authorRole={author?.job || "Blogger"}
+          authorRole={recipe.author?.job || "Blogger"}
           lastUpdated={recipe.published_at || undefined}
           view_count={recipe.view_count}
         />
@@ -202,10 +189,10 @@ const breadcrumbItems = [
 
         <!-- Hero Image -->
         <HeroImage
-          src={heroImage.image_url || recipe.image_url}
+          src={heroImage.image_url || recipe.image_url || undefined}
           alt={heroImage.imageAlt || recipe.imageAlt || recipe.headline}
-          width={heroImage.imageWidth || recipe.imageWidth}
-          height={heroImage.imageHeight || recipe.imageHeight}
+          width={heroImage.imageWidth || recipe.imageWidth || undefined}
+          height={heroImage.imageHeight || recipe.imageHeight || undefined}
           srcset={heroSrcSet}
           sizes={heroSizes}
           style={heroImage.imageStyle}

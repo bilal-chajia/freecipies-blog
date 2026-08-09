@@ -1,5 +1,5 @@
-import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { lazy, type ComponentType, type LazyExoticComponent } from 'react';
+import { Navigate } from 'react-router';
 import { importWithRetry } from '../utils/importWithRetry';
 
 const lazyPage = <T extends ComponentType<any>>(

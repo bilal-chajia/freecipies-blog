@@ -50,8 +50,8 @@ const getCategoryImage = (category: HydratedCategory, targetWidth: number) => {
                 )}
               </div>
               <span class="category-tile__label">{category.label}</span>
-              {category.cached_post_count > 0 && (
-                <span class="category-tile__count">{category.cached_post_count} recipes</span>
+              {(category.cached_post_count ?? 0) > 0 && (
+                <span class="category-tile__count">{category.cached_post_count ?? 0} recipes</span>
               )}
             </a>
           );

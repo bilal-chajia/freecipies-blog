@@ -1,12 +1,21 @@
 import React from 'react';
 import {
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
+  useTable,
+  tableFeatures,
+  columnFilteringFeature,
+  columnVisibilityFeature,
+  globalFilteringFeature,
+  rowPaginationFeature,
+  rowSelectionFeature,
+  rowSortingFeature,
+  createFilteredRowModel,
+  createPaginatedRowModel,
+  createSortedRowModel,
   flexRender,
   type ColumnDef,
+  type Row,
+  type RowData,
+  type Table as TanStackTable,
   type SortingState,
   type ColumnFiltersState,
   type RowSelectionState,
@@ -19,8 +28,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Checkbox } from './checkbox';
 import { Skeleton } from './skeleton';
 
-interface DataTableProps<TData> {
-  columns: ColumnDef<TData, any>[];
+export const dataTableFeatures = tableFeatures({
+  columnFilteringFeature,
+  globalFilteringFeature,
+  rowPaginationFeature,
+  rowSelectionFeature,
+  rowSortingFeature,
+  columnVisibilityFeature,
+  filteredRowModel: createFilteredRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+  sortedRowModel: createSortedRowModel(),
+});
+
+type DataTableFeatures = typeof dataTableFeatures;
+type DataTableTable<TData extends RowData> = TanStackTable<DataTableFeatures, TData>;
+type DataTableColumnMeta = { className?: string };
+export type DataTableColumnDef<TData extends RowData> = ColumnDef<DataTableFeatures, TData>;
+export type DataTableRow<TData extends RowData> = Row<DataTableFeatures, TData>;
+
+interface DataTableProps<TData extends RowData> {
+  columns: DataTableColumnDef<TData>[];
   data: TData[];
   loading?: boolean;
   error?: string | null;
@@ -44,7 +71,11 @@ interface DataTableProps<TData> {
   onPageSizeChange?: (pageSize: number) => void;
 }
 
-function DataTable<TData>({
+export function createDataTableOptions<TData extends RowData>(input: Pick<DataTableProps<TData>, 'data' | 'columns'>) {
+  return { features: dataTableFeatures, data: input.data, columns: input.columns };
+}
+
+function DataTable<TData extends RowData>({
   columns,
   data,
   loading = false,
@@ -73,7 +104,8 @@ function DataTable<TData>({
   const [globalFilter, setGlobalFilter] = React.useState('');
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: dataTableFeatures,
     data,
     columns: enableRowSelection
       ? [
@@ -95,14 +127,10 @@ function DataTable<TData>({
             ),
             enableSorting: false,
             enableHiding: false,
-          } as ColumnDef<TData, any>,
+          } as DataTableColumnDef<TData>,
           ...columns,
         ]
       : columns,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: !manualPagination && enableFiltering ? getFilteredRowModel() : undefined,
-    getPaginationRowModel: !manualPagination ? getPaginationRowModel() : undefined,
-    getSortedRowModel: getSortedRowModel(),
     onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
@@ -140,6 +168,7 @@ function DataTable<TData>({
       ? undefined
       : {
           pagination: {
+            pageIndex: 0,
             pageSize,
           },
         },
@@ -272,9 +301,9 @@ function DataTable<TData>({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <p className="text-sm font-medium">
-              Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
+              Showing {table.state.pagination.pageIndex * table.state.pagination.pageSize + 1} to{' '}
               {Math.min(
-                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                (table.state.pagination.pageIndex + 1) * table.state.pagination.pageSize,
                 manualPagination ? (totalCount ?? 0) : table.getRowCount()
               )}{' '}
               of {manualPagination ? (totalCount ?? 0) : table.getRowCount()} results
@@ -284,14 +313,14 @@ function DataTable<TData>({
             <div className="flex items-center space-x-2">
               <p className="text-sm font-medium">Rows per page</p>
               <Select
-                value={`${table.getState().pagination.pageSize}`}
+                value={`${table.state.pagination.pageSize}`}
                 onValueChange={(value: string) => {
                   table.setPageSize(Number(value));
                 }}
                 disabled={loading}
               >
                 <SelectTrigger className="h-8 w-[70px]">
-                  <SelectValue placeholder={table.getState().pagination.pageSize} />
+                  <SelectValue placeholder={table.state.pagination.pageSize} />
                 </SelectTrigger>
                 <SelectContent side="top">
                   {pageSizeOptions.map((size) => (
@@ -322,7 +351,7 @@ function DataTable<TData>({
                 <ChevronDown className="h-4 w-4" />
               </Button>
               <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-                Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                Page {table.state.pagination.pageIndex + 1} of {table.getPageCount()}
               </div>
               <Button
                 variant="outline"

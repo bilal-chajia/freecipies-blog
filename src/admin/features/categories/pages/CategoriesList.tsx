@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router';
 import { Plus, Search, FolderTree, LayoutGrid } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';

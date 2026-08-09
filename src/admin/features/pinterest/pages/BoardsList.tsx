@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Plus, Edit, Trash2, ExternalLink, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';

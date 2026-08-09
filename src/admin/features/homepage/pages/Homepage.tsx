@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { arrayMove } from '@dnd-kit/sortable';
 import api from '@admin/services/api-client';
 import type { AxiosRequestConfig } from 'axios';

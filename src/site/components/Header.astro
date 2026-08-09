@@ -779,7 +779,7 @@ const { headerMenu = defaultHeaderMenu } = Astro.props as Props;
   });
 
   // Search modal
-  const searchBtn = document.querySelector(".search-btn");
+  const searchBtn = document.querySelector<HTMLButtonElement>(".search-btn");
   const searchModal = document.querySelector("#search-modal");
   const closeSearch = document.querySelector(".close-search");
   const searchInput = document.querySelector<HTMLInputElement>(".search-input");
