@@ -1,7 +1,7 @@
 # Project Architecture
 
-> **Last Updated:** 2026-05-11
-> **Framework:** Astro 6.3.3 + React 19
+> **Last Updated:** 2026-08-09
+> **Framework:** Astro 7.2.0 + React 19.2.8
 > **Deployment:** Cloudflare Pages + D1 + R2 + KV
 
 ---

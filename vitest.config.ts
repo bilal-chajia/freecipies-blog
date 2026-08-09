@@ -12,6 +12,8 @@ export default defineConfig({
       '**/dist/**',
       '**/cypress/**',
       '**/.{idea,git,cache,output,temp}/**',
+      '**/.tmp/**',
+      '**/.pnpm-store/**',
       '**/.worktrees/**',
     ],
   },

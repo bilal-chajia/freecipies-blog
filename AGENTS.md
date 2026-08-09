@@ -2,9 +2,10 @@
 
 ## Stack
 
-- Astro 6.3.3 + React 19 + Tailwind 4 + Drizzle ORM + Zod 4
+- Astro 7.2.0 + React 19.2.8 + Tailwind CSS 4.3.3 + Vite 8.2.1
+- Drizzle ORM + Zod 4 + TypeScript 6 strict
 - Cloudflare: D1 (SQLite), R2 (storage), KV (cache), Workers (runtime)
-- TypeScript 6 strict, `pnpm` only
+- pnpm 11.20.0 only
 
 ## Commands
 
@@ -27,7 +28,7 @@ src/
 │   ├── settings/   ├── menus/      ├── templates/
 │   ├── pinterest/  └── redirects/
 ├── server/         # API handlers, auth guards, Cloudflare binding access, site-data loaders
-├── admin/          # React SPA (Radix UI + shadcn + react-router-dom)
+├── admin/          # React SPA (Radix UI + shadcn + react-router 8)
 ├── site/           # Public Astro UI (components, layouts, scripts, styles)
 └── shared/         # Single source of truth: database, types, utils, validation, image contracts
 ```
